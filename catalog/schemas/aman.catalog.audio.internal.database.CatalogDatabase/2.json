@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "f33c2845e87e6c2ca253a9eb04959001",
+    "identityHash": "66a9635e676e2efed3c0553a63bd0855",
     "entities": [
       {
         "tableName": "tracks",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `mediaStoreId` INTEGER NOT NULL, `albumId` INTEGER, `path` TEXT NOT NULL, `folderName` TEXT NOT NULL, `folderPath` TEXT NOT NULL, `title` TEXT NOT NULL, `sizeBytes` INTEGER NOT NULL, `dateAdded` INTEGER NOT NULL, `dateModified` INTEGER NOT NULL, `mimeType` TEXT NOT NULL, `artistDisplay` TEXT NOT NULL, `albumDisplay` TEXT NOT NULL, `albumArtistDisplay` TEXT NOT NULL, `genreDisplay` TEXT NOT NULL, `composerDisplay` TEXT NOT NULL, `lyricistDisplay` TEXT NOT NULL, `durationMs` INTEGER NOT NULL, `year` INTEGER NOT NULL, `releaseDate` TEXT NOT NULL, `trackNumber` INTEGER NOT NULL, `discNumber` INTEGER NOT NULL, `rawArtistString` TEXT NOT NULL, `rawGenreString` TEXT NOT NULL, `rawComposerString` TEXT NOT NULL, `rawLyricistString` TEXT NOT NULL, `rawAlbumArtistString` TEXT NOT NULL, `rawAlbumString` TEXT NOT NULL, `contentRating` INTEGER NOT NULL, `bitrate` INTEGER NOT NULL, `sampleRate` INTEGER NOT NULL, `channels` INTEGER NOT NULL, `codec` TEXT NOT NULL, `bitsPerSample` INTEGER NOT NULL, `playCount` INTEGER NOT NULL, `lastPlayed` INTEGER NOT NULL, `totalPlayTimeMs` INTEGER NOT NULL, `skipCount` INTEGER NOT NULL, FOREIGN KEY(`albumId`) REFERENCES `albums`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `mediaStoreId` INTEGER NOT NULL, `albumId` INTEGER, `path` TEXT NOT NULL, `folderName` TEXT NOT NULL, `folderPath` TEXT NOT NULL, `title` TEXT NOT NULL, `sizeBytes` INTEGER NOT NULL, `dateAdded` INTEGER NOT NULL, `dateModified` INTEGER NOT NULL, `mimeType` TEXT NOT NULL, `artistDisplay` TEXT NOT NULL, `albumDisplay` TEXT NOT NULL, `albumArtistDisplay` TEXT NOT NULL, `genreDisplay` TEXT NOT NULL, `composerDisplay` TEXT NOT NULL, `lyricistDisplay` TEXT NOT NULL, `durationMs` INTEGER NOT NULL, `year` INTEGER NOT NULL, `releaseDate` TEXT NOT NULL, `trackNumber` INTEGER NOT NULL, `discNumber` INTEGER NOT NULL, `rawArtistString` TEXT NOT NULL, `rawGenreString` TEXT NOT NULL, `rawComposerString` TEXT NOT NULL, `rawLyricistString` TEXT NOT NULL, `rawAlbumArtistString` TEXT NOT NULL, `rawAlbumString` TEXT NOT NULL, `contentRating` INTEGER NOT NULL, `bitrate` INTEGER NOT NULL, `sampleRate` INTEGER NOT NULL, `channels` INTEGER NOT NULL, `codec` TEXT NOT NULL, `bitsPerSample` INTEGER NOT NULL, `replayGainTrackGain` REAL NOT NULL DEFAULT 0.0, `replayGainTrackPeak` REAL NOT NULL DEFAULT 0.0, `replayGainAlbumGain` REAL NOT NULL DEFAULT 0.0, `replayGainAlbumPeak` REAL NOT NULL DEFAULT 0.0, `playCount` INTEGER NOT NULL, `lastPlayed` INTEGER NOT NULL, `totalPlayTimeMs` INTEGER NOT NULL, `skipCount` INTEGER NOT NULL, FOREIGN KEY(`albumId`) REFERENCES `albums`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "id",
@@ -210,6 +210,34 @@
             "columnName": "bitsPerSample",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "replayGainTrackGain",
+            "columnName": "replayGainTrackGain",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "0.0"
+          },
+          {
+            "fieldPath": "replayGainTrackPeak",
+            "columnName": "replayGainTrackPeak",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "0.0"
+          },
+          {
+            "fieldPath": "replayGainAlbumGain",
+            "columnName": "replayGainAlbumGain",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "0.0"
+          },
+          {
+            "fieldPath": "replayGainAlbumPeak",
+            "columnName": "replayGainAlbumPeak",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "0.0"
           },
           {
             "fieldPath": "playCount",
@@ -1058,7 +1086,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f33c2845e87e6c2ca253a9eb04959001')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '66a9635e676e2efed3c0553a63bd0855')"
     ]
   }
 }

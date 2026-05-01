@@ -1,5 +1,6 @@
 package aman.catalog.audio.internal.database
 
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import aman.catalog.audio.internal.database.entities.*
@@ -23,7 +24,10 @@ import aman.catalog.audio.internal.database.daos.*
         TrackComposerRef::class,
         TrackLyricistRef::class
     ],
-    version = 1,
+    version = 2,
+    autoMigrations = [
+        AutoMigration(from = 1, to = 2)
+    ],
     exportSchema = true
 )
 abstract class CatalogDatabase : RoomDatabase() {

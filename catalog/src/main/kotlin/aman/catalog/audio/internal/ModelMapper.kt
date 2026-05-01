@@ -74,6 +74,10 @@ internal object ModelMapper {
                 channels = entity.channels,
                 codec = entity.codec.ifBlank { entity.mimeType },
                 bitsPerSample = entity.bitsPerSample,
+                replayGainTrackGain = entity.replayGainTrackGain,
+                replayGainTrackPeak = entity.replayGainTrackPeak,
+                replayGainAlbumGain = entity.replayGainAlbumGain,
+                replayGainAlbumPeak = entity.replayGainAlbumPeak,
                 foundComposer = entity.rawComposerString,
                 foundAlbumArtist = entity.rawAlbumArtistString,
                 foundYear = entity.year,
@@ -91,17 +95,17 @@ internal object ModelMapper {
 
     // --- CATEGORY MAPPING ---
 
-    // 1. Artist (Standard)
+    // Artist (Standard)
     fun toArtist(data: ArtistDao.ArtistWithCount): Artist {
         return Artist(data.id, data.name, data.trackCount, data.albumCount, data.totalDuration, data.coverArtPath?.let { ArtPath(it, data.coverArtDateModified) }, data.playCount, data.lastPlayed, data.totalPlayTimeMs)
     }
 
-    // 2. Artist (Album Artist View)
+    // Artist (Album Artist View)
     fun toArtist(data: ArtistDao.AlbumArtistWithCounts): Artist {
         return Artist(data.id, data.name, data.trackCount, data.albumCount, data.totalDuration, data.coverArtPath?.let { ArtPath(it, data.coverArtDateModified) }, data.playCount, data.lastPlayed, data.totalPlayTimeMs)
     }
 
-    // 3. Album
+    // Album
     fun toAlbum(data: AlbumDao.AlbumDetails): Album {
         return Album(
             id = data.id,
@@ -119,7 +123,7 @@ internal object ModelMapper {
         )
     }
 
-    // 4. Genre
+    // Genre
     fun toGenre(data: GenreDao.GenreWithCount): Genre {
         return Genre(
             data.id,
@@ -134,7 +138,7 @@ internal object ModelMapper {
         )
     }
 
-    // 5. MatchedAlbum Wrapper
+    // MatchedAlbum Wrapper
     fun toMatchedAlbum(data: AlbumDao.MatchedAlbumDetails): MatchedAlbum {
         return MatchedAlbum(
             album = toAlbum(data.albumDetails),
@@ -143,7 +147,7 @@ internal object ModelMapper {
         )
     }
 
-    // 6. MatchedGenre Wrapper
+    // MatchedGenre Wrapper
     fun toMatchedGenre(data: GenreDao.MatchedGenreDetails): MatchedGenre {
         return MatchedGenre(
             genre = toGenre(data.genreWithCount),
@@ -152,17 +156,17 @@ internal object ModelMapper {
         )
     }
 
-    // 7. Composer
+    // Composer
     fun toComposer(data: ComposerDao.ComposerWithCount): Composer {
         return Composer(data.id, data.name, data.trackCount, data.albumCount, data.totalDuration, data.coverArtPath?.let { ArtPath(it, data.coverArtDateModified) }, data.playCount, data.lastPlayed, data.totalPlayTimeMs)
     }
 
-    // 8. Lyricist
+    // Lyricist
     fun toLyricist(data: LyricistDao.LyricistWithCount): Lyricist {
         return Lyricist(data.id, data.name, data.trackCount, data.albumCount, data.totalDuration, data.coverArtPath?.let { ArtPath(it, data.coverArtDateModified) }, data.playCount, data.lastPlayed, data.totalPlayTimeMs)
     }
 
-    // 9. Playlist
+    // Playlist
     fun toPlaylist(entity: PlaylistEntity, trackCount: Int, totalDuration: Long, coverArtPath: ArtPath?): Playlist {
         return Playlist(
             id = entity.id,
@@ -175,7 +179,7 @@ internal object ModelMapper {
         )
     }
 
-    // 10. Folder
+    // Folder
     fun toFolder(data: FolderDao.FolderCount): Folder {
         return Folder(
             data.name,
@@ -190,7 +194,7 @@ internal object ModelMapper {
         )
     }
 
-    // 11. Year
+    // Year
     fun toYear(data: YearDao.YearCount): Year {
         return Year(
             data.year,
@@ -204,7 +208,7 @@ internal object ModelMapper {
         )
     }
 
-    // 12. FavoritesInfo
+    // FavoritesInfo
     fun toFavoritesInfo(data: FavoritesDao.FavoritesInfoResult): FavoritesInfo {
         return FavoritesInfo(
             trackCount = data.trackCount,

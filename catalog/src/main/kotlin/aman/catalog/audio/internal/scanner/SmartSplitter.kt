@@ -33,24 +33,19 @@ class SmartSplitter(private val config: CatalogConfig) {
     var workingString = rawString.trim()
     val protectedTokens = mutableMapOf<String, String>()
 
-    // 1. PROTECTION PHASE
-    // (Masks exceptions like "AC/DC" so they don't get split)
+    // Masks exceptions like "AC/DC" so they don't get split
     var tokenIndex = 0
     compiledExceptions.forEach { (originalException, precompiledRegex) ->
       if (workingString.contains(originalException, ignoreCase = true)) {
         val token = "$tokenPrefix$tokenIndex##"
-        // Use the pre-compiled regex instead of creating a new one
         workingString = workingString.replace(precompiledRegex, token)
         protectedTokens[token] = originalException
         tokenIndex++
       }
     }
 
-    // 2. SPLITTING PHASE
-    // Now uses the dynamic regex containing both defaults and custom splitters
     val rawParts = workingString.split(splitRegex)
 
-    // 3. RESTORATION & CLEANUP PHASE
     return rawParts
             .map { it.trim() }
             .filter { it.isNotEmpty() }

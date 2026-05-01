@@ -63,7 +63,11 @@ internal class TrackIngestor(
             sampleRate = extendedMeta.sampleRate,
             channels = extendedMeta.channels,
             codec = extendedMeta.codec,
-            bitsPerSample = extendedMeta.bitsPerSample
+            bitsPerSample = extendedMeta.bitsPerSample,
+            replayGainTrackGain = extendedMeta.replayGainTrackGain,
+            replayGainTrackPeak = extendedMeta.replayGainTrackPeak,
+            replayGainAlbumGain = extendedMeta.replayGainAlbumGain,
+            replayGainAlbumPeak = extendedMeta.replayGainAlbumPeak
         )
 
         val trackId = db.trackDao().insert(trackEntity)
@@ -132,7 +136,11 @@ internal class TrackIngestor(
             sampleRate = extendedMeta.sampleRate,
             channels = extendedMeta.channels,
             codec = extendedMeta.codec,
-            bitsPerSample = extendedMeta.bitsPerSample
+            bitsPerSample = extendedMeta.bitsPerSample,
+            replayGainTrackGain = extendedMeta.replayGainTrackGain,
+            replayGainTrackPeak = extendedMeta.replayGainTrackPeak,
+            replayGainAlbumGain = extendedMeta.replayGainAlbumGain,
+            replayGainAlbumPeak = extendedMeta.replayGainAlbumPeak
         )
 
         // Clear old junction refs and insert fresh ones based on the updated metadata

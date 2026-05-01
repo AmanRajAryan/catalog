@@ -69,6 +69,11 @@ object TagLibHelper {
             val trackNum = trackStr.substringBefore('/').toIntOrNull() ?: 0
             val discNum = discStr.substringBefore('/').toIntOrNull() ?: 0
 
+            val replayGainTrackGain = (rawMap["REPLAYGAIN_TRACK_GAIN"] ?: rawMap["replaygain_track_gain"])?.replace(" dB", "", ignoreCase = true)?.trim()?.toDoubleOrNull() ?: 0.0
+            val replayGainTrackPeak = (rawMap["REPLAYGAIN_TRACK_PEAK"] ?: rawMap["replaygain_track_peak"])?.toDoubleOrNull() ?: 0.0
+            val replayGainAlbumGain = (rawMap["REPLAYGAIN_ALBUM_GAIN"] ?: rawMap["replaygain_album_gain"])?.replace(" dB", "", ignoreCase = true)?.trim()?.toDoubleOrNull() ?: 0.0
+            val replayGainAlbumPeak = (rawMap["REPLAYGAIN_ALBUM_PEAK"] ?: rawMap["replaygain_album_peak"])?.toDoubleOrNull() ?: 0.0
+
             return ExtendedMetadata(
                 contentRating = rating,
                 bitrate = bitrate,
@@ -76,6 +81,10 @@ object TagLibHelper {
                 channels = channels,
                 codec = rawFormat,
                 bitsPerSample = bits,
+                replayGainTrackGain = replayGainTrackGain,
+                replayGainTrackPeak = replayGainTrackPeak,
+                replayGainAlbumGain = replayGainAlbumGain,
+                replayGainAlbumPeak = replayGainAlbumPeak,
                 foundYear = parsedYear,
                 foundReleaseDate = releaseDateStr,
                 foundComposer = composer,

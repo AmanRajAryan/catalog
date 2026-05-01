@@ -411,7 +411,11 @@ interface TrackDao {
             sampleRate = :sampleRate,
             channels = :channels,
             codec = :codec,
-            bitsPerSample = :bitsPerSample
+            bitsPerSample = :bitsPerSample,
+            replayGainTrackGain = :replayGainTrackGain,
+            replayGainTrackPeak = :replayGainTrackPeak,
+            replayGainAlbumGain = :replayGainAlbumGain,
+            replayGainAlbumPeak = :replayGainAlbumPeak
         WHERE id = :id
     """
   )
@@ -448,7 +452,11 @@ interface TrackDao {
           sampleRate: Int,
           channels: Int,
           codec: String,
-          bitsPerSample: Int
+          bitsPerSample: Int,
+          replayGainTrackGain: Double,
+          replayGainTrackPeak: Double,
+          replayGainAlbumGain: Double,
+          replayGainAlbumPeak: Double
   )
 
   data class PathIdPair(val path: String, val id: Long)

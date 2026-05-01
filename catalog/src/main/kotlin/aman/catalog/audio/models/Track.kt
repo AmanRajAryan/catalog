@@ -60,6 +60,11 @@ data class ExtendedMetadata(
     val codec: String,
     val bitsPerSample: Int,
 
+    val replayGainTrackGain: Double = 0.0,
+    val replayGainTrackPeak: Double = 0.0,
+    val replayGainAlbumGain: Double = 0.0,
+    val replayGainAlbumPeak: Double = 0.0,
+
     val foundYear: Int = 0,
     val foundReleaseDate: String = "",
     val foundComposer: String = "",
@@ -73,6 +78,13 @@ data class ExtendedMetadata(
     val foundGenre: String = ""
 ) {
     companion object {
-        val EMPTY = ExtendedMetadata(0, 0, 0, 2, "", 0)
+        val EMPTY = ExtendedMetadata(
+            contentRating = 0,
+            bitrate = 0,
+            sampleRate = 0,
+            channels = 2,
+            codec = "",
+            bitsPerSample = 0
+        )
     }
 }

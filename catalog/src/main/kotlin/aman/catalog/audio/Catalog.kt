@@ -91,7 +91,6 @@ object Catalog {
             CatalogDatabase::class.java,
             "music_catalog.db"
         )
-            .fallbackToDestructiveMigration(true)
             .build()
 
         scanner = ScannerService(context, database!!, loadedConfig)
