@@ -39,7 +39,7 @@ Add the dependency to your module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-     implementation("io.github.amanrajaryan:Catalog:1.0.0")
+     implementation("io.github.amanrajaryan:Catalog:1.1.0")
 }
 ```
 
