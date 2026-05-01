@@ -1,6 +1,5 @@
 package aman.catalog.audio.internal.database.entities
 
-import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -79,10 +78,10 @@ data class TrackEntity(
     val codec: String = "",
     val bitsPerSample: Int = 0,
 
-    @ColumnInfo(defaultValue = "0.0") val replayGainTrackGain: Double = 0.0,
-    @ColumnInfo(defaultValue = "0.0") val replayGainTrackPeak: Double = 0.0,
-    @ColumnInfo(defaultValue = "0.0") val replayGainAlbumGain: Double = 0.0,
-    @ColumnInfo(defaultValue = "0.0") val replayGainAlbumPeak: Double = 0.0,
+    val replayGainTrackGain: Double = 0.0,
+    val replayGainTrackPeak: Double = 0.0,
+    val replayGainAlbumGain: Double = 0.0,
+    val replayGainAlbumPeak: Double = 0.0,
 
     val playCount: Int = 0,
     val lastPlayed: Long = 0,

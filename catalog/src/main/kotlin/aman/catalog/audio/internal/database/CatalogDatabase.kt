@@ -24,10 +24,7 @@ import aman.catalog.audio.internal.database.daos.*
         TrackComposerRef::class,
         TrackLyricistRef::class
     ],
-    version = 2,
-    autoMigrations = [
-        AutoMigration(from = 1, to = 2)
-    ],
+    version = 1,
     exportSchema = true
 )
 abstract class CatalogDatabase : RoomDatabase() {
