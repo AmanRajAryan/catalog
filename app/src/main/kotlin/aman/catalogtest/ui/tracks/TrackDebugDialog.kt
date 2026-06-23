@@ -76,6 +76,12 @@ fun TrackDebugDialog(
             add("channels"        to track.metadata.channels.toString())
             add("codec"           to track.metadata.codec.ifBlank { "—" })
             add("bitsPerSample"   to if (track.metadata.bitsPerSample > 0) "${track.metadata.bitsPerSample}-bit" else "—")
+            
+            add("rgTrackGain"     to if (track.metadata.replayGainTrackGain != 0.0) "${track.metadata.replayGainTrackGain} dB" else "—")
+            add("rgTrackPeak"     to if (track.metadata.replayGainTrackPeak != 0.0) track.metadata.replayGainTrackPeak.toString() else "—")
+            add("rgAlbumGain"     to if (track.metadata.replayGainAlbumGain != 0.0) "${track.metadata.replayGainAlbumGain} dB" else "—")
+            add("rgAlbumPeak"     to if (track.metadata.replayGainAlbumPeak != 0.0) track.metadata.replayGainAlbumPeak.toString() else "—")
+
             add("contentRating"   to when (track.metadata.contentRating) {
                 1    -> "1 (Explicit)"
                 2    -> "2 (Clean)"

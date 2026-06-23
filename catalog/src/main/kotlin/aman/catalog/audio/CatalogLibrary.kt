@@ -407,6 +407,15 @@ class CatalogLibrary internal constructor(private val databaseProvider: () -> Ca
   // GET BY ID / NATURAL KEY
   // ----------------------------------------
 
+  /** Live stream of a single track by its id. Emits null if not
+     found. */
+   fun getTrackById(trackId: Long): Flow<Track?> {
+     return database.trackDao().getTrackByIdFlow(trackId)
+              .distinctUntilChanged()
+              .map { it?.let { ModelMapper.toTrack(it) } }
+              .flowOn(Dispatchers.Default)
+    }
+
   /** Live stream of a single track artist by their id. Emits null if not found. */
   fun getTrackArtistById(artistId: Long): Flow<Artist?> {
     return database.artistDao()

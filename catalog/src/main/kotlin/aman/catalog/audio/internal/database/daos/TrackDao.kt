@@ -56,6 +56,10 @@ interface TrackDao {
   @Query("SELECT * FROM tracks WHERE id = :id")
   suspend fun getTrackById(id: Long): TrackWithRelations?
 
+  @Transaction
+  @Query("SELECT * FROM tracks WHERE id = :id")
+   fun getTrackByIdFlow(id: Long): Flow<TrackWithRelations?>
+
   @Query("SELECT albumId FROM tracks WHERE id = :id")
   suspend fun getAlbumIdForTrack(id: Long): Long?
 

@@ -194,6 +194,7 @@ Useful for displaying a genre chip row on an album or artist detail screen.
 Single-entity lookups. All return a `Flow` that emits `null` if the entity doesn't exist.
 
 ```kotlin
+fun getTrackById(trackId: Long): Flow<Track?>
 fun getTrackArtistById(artistId: Long): Flow<Artist?>
 fun getAlbumArtistById(artistId: Long): Flow<Artist?>
 fun getAlbumById(albumId: Long): Flow<Album?>
