@@ -77,7 +77,7 @@ fun TrackEditorDialog(
         isSaving = true
         val tags = mapOf("TITLE" to editTitle, "ARTIST" to editArtist, "ALBUM" to editAlbum)
         coroutineScope.launch {
-            val result = viewModel.updateTrackTags(context, track, tags, allowFallback)
+            val result = viewModel.updateTrackTags(context, track, tags, allowMediaStoreFallback = allowFallback)
             when (result) {
                 is CatalogEditor.EditResult.Success -> {
                     Toast.makeText(context, "Saved successfully.", Toast.LENGTH_SHORT).show()

@@ -286,7 +286,7 @@ class ScannerService(
             // D. Extract & Re-ingest
             val extendedMeta = TagLibHelper.extract(path)
             val skeleton =
-                    systemSkeleton
+                    systemSkeleton?.copy(dateModified = file.lastModified())
                             ?: SkeletonTrack(
                                     mediaStoreId = existingTrack.mediaStoreId,
                                     path = path,

@@ -74,6 +74,11 @@ object TagLibHelper {
             val replayGainAlbumGain = (rawMap["REPLAYGAIN_ALBUM_GAIN"] ?: rawMap["replaygain_album_gain"])?.replace(" dB", "", ignoreCase = true)?.trim()?.toDoubleOrNull() ?: 0.0
             val replayGainAlbumPeak = (rawMap["REPLAYGAIN_ALBUM_PEAK"] ?: rawMap["replaygain_album_peak"])?.toDoubleOrNull() ?: 0.0
 
+            val hasLyrics = !rawMap["LYRICS"].isNullOrBlank() || 
+                            !rawMap["USLT"].isNullOrBlank() || 
+                            !rawMap["©LYR"].isNullOrBlank() ||
+                            !rawMap["TEXT"].isNullOrBlank()
+
             return ExtendedMetadata(
                 contentRating = rating,
                 bitrate = bitrate,
@@ -95,7 +100,8 @@ object TagLibHelper {
                 foundTitle = title,
                 foundArtist = artist,
                 foundAlbum = album,
-                foundGenre = genre
+                foundGenre = genre,
+                hasLyrics = hasLyrics
             )
 
         } catch (e: Exception) {

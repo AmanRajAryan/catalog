@@ -49,6 +49,8 @@ data class Track(
     val skipCount: Int = 0,
     val dateFavorited: Long = 0,
     
+    val hasLyrics: Boolean = false,
+    
     val metadata: ExtendedMetadata = ExtendedMetadata.EMPTY
 )
 
@@ -75,7 +77,8 @@ data class ExtendedMetadata(
     val foundTitle: String = "",
     val foundArtist: String = "",
     val foundAlbum: String = "",
-    val foundGenre: String = ""
+    val foundGenre: String = "",
+    val hasLyrics: Boolean = false
 ) {
     companion object {
         val EMPTY = ExtendedMetadata(
@@ -84,7 +87,8 @@ data class ExtendedMetadata(
             sampleRate = 0,
             channels = 2,
             codec = "",
-            bitsPerSample = 0
+            bitsPerSample = 0,
+            hasLyrics = false
         )
     }
 }

@@ -41,6 +41,7 @@ fun TrackDebugDialog(
             add("genre"           to track.genre.ifBlank { "—" })
             add("composer"        to track.composer.ifBlank { "—" })
             add("lyricist"        to track.lyricist.ifBlank { "—" })
+            add("hasLyrics"       to track.hasLyrics.toString())
 
             add("── Structured Entities" to "")
             add("artists"         to track.artists.joinToString { "${it.name} (id=${it.id})" }.ifBlank { "—" })

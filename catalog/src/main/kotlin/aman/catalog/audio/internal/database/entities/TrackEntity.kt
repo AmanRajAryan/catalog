@@ -77,6 +77,8 @@ data class TrackEntity(
     val channels: Int = 2,
     val codec: String = "",
     val bitsPerSample: Int = 0,
+    
+    val hasLyrics: Boolean = false,
 
     val replayGainTrackGain: Double = 0.0,
     val replayGainTrackPeak: Double = 0.0,

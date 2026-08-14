@@ -100,6 +100,7 @@ private fun TrackEditorContent(
     var isSaving            by remember { mutableStateOf(false) }
     var showSafChoiceDialog by remember { mutableStateOf(false) }
     var pendingRetryAction  by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var newArtworkUri       by remember { mutableStateOf<android.net.Uri?>(null) }
 
     val busy = isSaving || isLoadingTags
 
@@ -111,6 +112,14 @@ private fun TrackEditorContent(
         isLoadingTags     = false
         pictures          = viewModel.getPicturesForTrack(track)
         isLoadingPictures = false
+    }
+
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            newArtworkUri = uri
+        }
     }
 
     // permission launchers
@@ -145,7 +154,24 @@ private fun TrackEditorContent(
     fun executeSave(allowFallback: Boolean) {
         isSaving = true
         coroutineScope.launch {
-            val result = viewModel.updateTrackTags(context, track, tagEntries.toMap(), allowFallback)
+            var newArtworkPath: String? = null
+            newArtworkUri?.let { uri ->
+                try {
+                    val tempFile = java.io.File(context.cacheDir, "temp_artwork.jpg")
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        tempFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    newArtworkPath = tempFile.absolutePath
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            val result = viewModel.updateTrackTags(
+                context, track, tagEntries.toMap(), newArtworkPath, allowFallback
+            )
             when (result) {
                 is CatalogEditor.EditResult.Success -> {
                     Toast.makeText(context, "Saved successfully.", Toast.LENGTH_SHORT).show()
@@ -297,6 +323,15 @@ private fun TrackEditorContent(
                     }
                 }
                 HorizontalDivider()
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { pickImageLauncher.launch("image/*") }) {
+                    Text("Pick New Artwork")
+                }
+                if (newArtworkUri != null) {
+                    Text("New artwork selected", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                }
             }
 
             Text(

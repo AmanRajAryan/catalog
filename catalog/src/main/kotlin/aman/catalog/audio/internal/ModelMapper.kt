@@ -66,6 +66,8 @@ internal object ModelMapper {
             
             dateFavorited = container.favorite?.dateMarked ?: 0,
             
+            hasLyrics = entity.hasLyrics,
+            
             // Technical
             metadata = ExtendedMetadata(
                 contentRating = entity.contentRating,
@@ -88,7 +90,8 @@ internal object ModelMapper {
                 foundTitle = entity.title,
                 foundArtist = entity.rawArtistString,
                 foundAlbum = entity.rawAlbumString,
-                foundGenre = entity.rawGenreString
+                foundGenre = entity.rawGenreString,
+                hasLyrics = entity.hasLyrics
             )
         )
     }

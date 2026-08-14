@@ -571,12 +571,21 @@ class CatalogViewModel : ViewModel() {
         context: Context,
         track: Track,
         newTags: Map<String, String>,
+        newArtworkPath: String? = null,
         allowMediaStoreFallback: Boolean = true
     ): CatalogEditor.EditResult {
+        val artworkUpdate = if (newArtworkPath != null) {
+            val bytes = java.io.File(newArtworkPath).readBytes()
+            CatalogEditor.ArtworkUpdate.Set(bytes, "image/jpeg")
+        } else {
+            CatalogEditor.ArtworkUpdate.NoChange
+        }
+
         return CatalogEditor.updateTrack(
             context                 = context,
             track                   = track,
             newTags                 = newTags,
+            artworkUpdate           = artworkUpdate,
             allowMediaStoreFallback = allowMediaStoreFallback
         )
     }
