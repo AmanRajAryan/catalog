@@ -1,13 +1,12 @@
 plugins {
     id("com.android.library")
-    id("kotlin-android")
     alias(libs.plugins.ksp) 
     id ("com.vanniktech.maven.publish")
 }
 
 android {
     namespace = "aman.catalog" 
-    compileSdk = 36 
+    compileSdk = 37 
 
     defaultConfig {
         minSdk = 23
