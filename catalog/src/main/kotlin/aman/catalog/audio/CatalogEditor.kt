@@ -53,7 +53,7 @@ object CatalogEditor {
      * Thread-safe against native crashes during concurrent edits.
      */
     suspend fun readTags(track: Track): Map<String, String> = withContext(Dispatchers.IO) {
-        Catalog.ioMutex.withLock {
+        Catalog.getMutexFor(track.path).withLock {
             return@withContext TagLib.getMetadata(track.path) ?: emptyMap()
         }
     }
@@ -102,9 +102,7 @@ object CatalogEditor {
             }
 
             if (newTags != null) {
-                // Convert Map to HashMap for the native interface
-                val map = if (newTags is HashMap) newTags else HashMap(newTags)
-                val tagSuccess = TagLib.setMetadata(cacheFile.absolutePath, map)
+                val tagSuccess = TagLib.setMetadata(cacheFile.absolutePath, newTags)
                 if (!tagSuccess) {
                     return@withContext EditResult.TagWriteFailed
                 }
@@ -141,7 +139,7 @@ object CatalogEditor {
             // Mutex is always released (via withLock's internal finally) before we return,
             // regardless of whether an exception is thrown.
             try {
-                Catalog.ioMutex.withLock {
+                Catalog.getMutexFor(track.path).withLock {
                     var outputStream: OutputStream? = null
 
                     // --- ATTEMPT 1: Optimistic SAF Write ---

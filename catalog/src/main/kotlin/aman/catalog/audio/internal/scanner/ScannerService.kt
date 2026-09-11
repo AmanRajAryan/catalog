@@ -46,7 +46,7 @@ class ScannerService(
    * Guarded by [Catalog.ioMutex] so a config change cannot corrupt junction tables
    * if it races against a simultaneous MediaWatcher-triggered scan().
    */
-  suspend fun applyConfigChanges(): ConfigChangeResult = Catalog.ioMutex.withLock {
+  suspend fun applyConfigChanges(): ConfigChangeResult = Catalog.scanMutex.withLock {
           withContext(Dispatchers.IO) {
             val start = System.currentTimeMillis()
             Log.d("CatalogScanner", "Applying config changes...")
@@ -89,7 +89,7 @@ class ScannerService(
    * Guarded by [Catalog.ioMutex] so only one scan can run at a time, and a scan
    * cannot overlap with a CatalogEditor file commit or an applyConfigChanges pass.
    */
-  suspend fun scan(): ScanResult? = Catalog.ioMutex.withLock {
+  suspend fun scan(): ScanResult? = Catalog.scanMutex.withLock {
           withContext(Dispatchers.IO) {
             val start = System.currentTimeMillis()
             Log.d("CatalogScanner", "Starting Scan...")
@@ -249,7 +249,7 @@ class ScannerService(
    * another rescanSingleFile() call. Because notifyFileChanged() launches this
    * via scope.launch, it will queue here and wait if the Mutex is already held.
    */
-  suspend fun rescanSingleFile(path: String) = Catalog.ioMutex.withLock {
+  suspend fun rescanSingleFile(path: String) = Catalog.scanMutex.withLock {
           withContext(Dispatchers.IO) {
             val file = File(path)
 

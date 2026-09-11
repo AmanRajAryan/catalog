@@ -47,16 +47,14 @@ dependencies {
   
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler) // The annotation processor
-
-   
-    implementation("io.github.amanrajaryan:TagLib:1.0.0")
+    ksp(libs.androidx.room.compiler)
+    implementation("io.github.amanrajaryan:TagLib:1.0.1")
 }
 
 
 
 mavenPublishing {
-    coordinates("io.github.amanrajaryan", "Catalog", "1.2.0")
+    coordinates("io.github.amanrajaryan", "Catalog", "1.2.2")
 
     pom {
         name.set("catalog")

@@ -11,6 +11,7 @@ import androidx.room.withTransaction
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * The main public API for the Catalog library.
@@ -28,7 +29,9 @@ object Catalog {
     private var configStore: ConfigStore? = null
     private var mediaWatcher: MediaWatcher? = null
 
-    internal val ioMutex = Mutex()
+    internal val scanMutex = Mutex()
+    private val fileMutexes = Array(256) { Mutex() }
+    internal fun getMutexFor(path: String): Mutex = fileMutexes[path.hashCode() and 0xFF]
 
     private val _configFlow = MutableStateFlow(CatalogConfig())
 

@@ -9,11 +9,19 @@ import aman.taglib.TagLib as NativeTagLib
 import java.io.File
 import java.io.IOException
 
+import aman.catalog.audio.Catalog
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+
 object TagLibHelper {
 
-    fun extract(path: String): ExtendedMetadata {
+    private val YEAR_REGEX = Regex("\\b\\d{4}\\b")
+
+    suspend fun extract(path: String): ExtendedMetadata = withContext(Dispatchers.IO) {
+        Catalog.getMutexFor(path).withLock {
         try {
-            val rawMap = NativeTagLib.getMetadata(path) ?: return ExtendedMetadata.EMPTY
+            val rawMap = NativeTagLib.getMetadata(path) ?: return@withContext ExtendedMetadata.EMPTY
 
             var rating = normalizeRating(rawMap["CONTENT_RATING"] ?: rawMap["CONTENTRATING"])
             var bitrate = rawMap["BITRATE"]?.toIntOrNull() ?: 0
@@ -44,42 +52,41 @@ object TagLibHelper {
                 bitrate = calculateBitrate(path)
             }
 
-
             val composer = rawMap["COMPOSER"] ?: ""
-            // Lyricist precedence: LYRICIST -> SONGWRITER -> WRITER
-            val lyricist = rawMap["LYRICIST"] ?: rawMap["SONGWRITER"] ?: rawMap["WRITER"] ?: ""
+            // Lyricist precedence: LYRICIST -> SONGWRITER -> WRITER -> TEXT -> AUTHOR
+            val lyricist = rawMap["LYRICIST"] ?: rawMap["SONGWRITER"] ?: rawMap["WRITER"] ?: rawMap["TEXT"] ?: rawMap["AUTHOR"] ?: ""
 
-            val albumArtist = rawMap["ALBUMARTIST"] ?: ""
-            val dateStr = rawMap["DATE"] ?: ""
+            val albumArtist = rawMap["ALBUMARTIST"] ?: rawMap["ALBUM ARTIST"] ?: rawMap["ALBUM_ARTIST"] ?: rawMap["BAND"] ?: ""
+            val dateStr = rawMap["DATE"] ?: rawMap["YEAR"] ?: rawMap["ORIGINALDATE"] ?: rawMap["ORIGINALYEAR"] ?: ""
 
             // Extract the first 4-digit year found anywhere in the date string —
             // handles formats like "2023", "2023-05-20", "23/05/2023", etc.
-            val yearPattern = Regex("\\b\\d{4}\\b")
-            val parsedYear = yearPattern.find(dateStr)?.value?.toIntOrNull() ?: 0
+            val parsedYear = YEAR_REGEX.find(dateStr)?.value?.toIntOrNull() ?: 0
 
-            val releaseDateStr = rawMap["RELEASEDATE"] ?: ""
-            val trackStr = rawMap["TRACKNUMBER"] ?: rawMap["TRACK"] ?: ""
-            val discStr = rawMap["DISCNUMBER"] ?: rawMap["DISC"] ?: ""
+            val releaseDateStr = rawMap["RELEASEDATE"] ?: rawMap["RELEASE DATE"] ?: rawMap["ORIGINALRELEASEDATE"] ?: ""
+            val trackStr = rawMap["TRACKNUMBER"] ?: rawMap["TRACK"] ?: rawMap["TRACKNUM"] ?: ""
+            val discStr = rawMap["DISCNUMBER"] ?: rawMap["DISC"] ?: rawMap["DISCNUM"] ?: ""
 
             val title = rawMap["TITLE"] ?: ""
             val artist = rawMap["ARTIST"] ?: ""
             val album = rawMap["ALBUM"] ?: ""
             val genre = rawMap["GENRE"] ?: ""
 
-            val trackNum = trackStr.substringBefore('/').toIntOrNull() ?: 0
-            val discNum = discStr.substringBefore('/').toIntOrNull() ?: 0
+            val trackNum = trackStr.substringBefore('/').trim().toIntOrNull() ?: 0
+            val discNum = discStr.substringBefore('/').trim().toIntOrNull() ?: 0
 
-            val replayGainTrackGain = (rawMap["REPLAYGAIN_TRACK_GAIN"] ?: rawMap["replaygain_track_gain"])?.replace(" dB", "", ignoreCase = true)?.trim()?.toDoubleOrNull() ?: 0.0
-            val replayGainTrackPeak = (rawMap["REPLAYGAIN_TRACK_PEAK"] ?: rawMap["replaygain_track_peak"])?.toDoubleOrNull() ?: 0.0
-            val replayGainAlbumGain = (rawMap["REPLAYGAIN_ALBUM_GAIN"] ?: rawMap["replaygain_album_gain"])?.replace(" dB", "", ignoreCase = true)?.trim()?.toDoubleOrNull() ?: 0.0
-            val replayGainAlbumPeak = (rawMap["REPLAYGAIN_ALBUM_PEAK"] ?: rawMap["replaygain_album_peak"])?.toDoubleOrNull() ?: 0.0
+            val replayGainTrackGain = (rawMap["REPLAYGAIN_TRACK_GAIN"] ?: rawMap["REPLAYGAIN_TRACK_GAIN_DB"])?.replace(" dB", "", ignoreCase = true)?.trim()?.toDoubleOrNull() ?: 0.0
+            val replayGainTrackPeak = (rawMap["REPLAYGAIN_TRACK_PEAK"])?.toDoubleOrNull() ?: 0.0
+            val replayGainAlbumGain = (rawMap["REPLAYGAIN_ALBUM_GAIN"] ?: rawMap["REPLAYGAIN_ALBUM_GAIN_DB"])?.replace(" dB", "", ignoreCase = true)?.trim()?.toDoubleOrNull() ?: 0.0
+            val replayGainAlbumPeak = (rawMap["REPLAYGAIN_ALBUM_PEAK"])?.toDoubleOrNull() ?: 0.0
 
             val hasLyrics = !rawMap["LYRICS"].isNullOrBlank() || 
                             !rawMap["USLT"].isNullOrBlank() || 
-                            !rawMap["©LYR"].isNullOrBlank() ||
-                            !rawMap["TEXT"].isNullOrBlank()
+                            !rawMap["UNSYNCEDLYRICS"].isNullOrBlank() || 
+                            !rawMap["UNSYNCED LYRICS"].isNullOrBlank() || 
+                            !rawMap["©LYR"].isNullOrBlank()
 
-            return ExtendedMetadata(
+            return@withContext ExtendedMetadata(
                 contentRating = rating,
                 bitrate = bitrate,
                 sampleRate = sampleRate,
@@ -106,7 +113,8 @@ object TagLibHelper {
 
         } catch (e: Exception) {
             Log.e("TagLibDebug", "Failed to extract metadata from: $path", e)
-            return ExtendedMetadata.EMPTY
+            return@withContext ExtendedMetadata.EMPTY
+        }
         }
     }
 
@@ -216,25 +224,29 @@ object TagLibHelper {
     }
 
     // Lyrics extraction
-    fun extractLyrics(path: String): String {
+    suspend fun extractLyrics(path: String): String {
+        Catalog.getMutexFor(path).withLock {
         try {
             val rawMap = NativeTagLib.getMetadata(path) ?: return ""
             if (rawMap.isEmpty()) return ""
 
             var lyrics = rawMap["LYRICS"]
             if (lyrics.isNullOrBlank()) lyrics = rawMap["USLT"]
+            if (lyrics.isNullOrBlank()) lyrics = rawMap["UNSYNCEDLYRICS"]
+            if (lyrics.isNullOrBlank()) lyrics = rawMap["UNSYNCED LYRICS"]
             if (lyrics.isNullOrBlank()) lyrics = rawMap["©LYR"]
-            if (lyrics.isNullOrBlank()) lyrics = rawMap["TEXT"]
 
             return lyrics ?: ""
         } catch (e: Exception) {
             Log.e("TagLibHelper", "Failed to extract lyrics for $path", e)
             return ""
         }
+        }
     }
 
     // Artwork extraction
-    fun extractPictures(path: String): List<TrackPicture> {
+    suspend fun extractPictures(path: String): List<TrackPicture> {
+        Catalog.getMutexFor(path).withLock {
         try {
             val artworks = NativeTagLib.getArtwork(path) ?: return emptyList()
             return artworks.map { art ->
@@ -247,6 +259,7 @@ object TagLibHelper {
         } catch (e: Exception) {
             Log.e("TagLibHelper", "Failed to extract artwork for $path", e)
             return emptyList()
+        }
         }
     }
 }

@@ -621,22 +621,19 @@ class CatalogLibrary internal constructor(private val databaseProvider: () -> Ca
    */
   suspend fun getLyricsForTrack(track: Track): String? =
           withContext(Dispatchers.IO) {
-            Catalog.ioMutex.withLock {
               val lyrics = TagLibHelper.extractLyrics(track.path)
               return@withContext lyrics.takeIf { it.isNotBlank() }
-            }
           }
 
   /**
    * Extracts embedded artwork directly from the audio file on-demand. Thread-safe against native
    * crashes during tag edits.
+   * @param track The [Track] object.
    * @return A list of [TrackPicture] objects.
    */
   suspend fun getPicturesForTrack(track: Track): List<TrackPicture> =
           withContext(Dispatchers.IO) {
-            Catalog.ioMutex.withLock {
               return@withContext TagLibHelper.extractPictures(track.path)
-            }
           }
 
   /**
@@ -647,8 +644,6 @@ class CatalogLibrary internal constructor(private val databaseProvider: () -> Ca
    */
   suspend fun getPicturesForPath(path: String): List<TrackPicture> =
           withContext(Dispatchers.IO) {
-            Catalog.ioMutex.withLock {
               return@withContext TagLibHelper.extractPictures(path)
-            }
           }
 }
