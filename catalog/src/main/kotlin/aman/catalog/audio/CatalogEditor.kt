@@ -15,6 +15,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.InputStream
 import java.io.IOException
 import java.io.OutputStream
 
@@ -48,7 +49,18 @@ object CatalogEditor {
         object ArtWriteFailed : EditResult()
     }
 
-        /**
+    private const val BUFFER_SIZE = 512 * 1024
+
+    private fun InputStream.fastCopyTo(out: OutputStream, bufferSize: Int = BUFFER_SIZE) {
+        val buffer = ByteArray(bufferSize)
+        var bytesRead: Int
+        while (read(buffer).also { bytesRead = it } >= 0) {
+            out.write(buffer, 0, bytesRead)
+        }
+        out.flush()
+    }
+
+    /**
      * Reads the exact, raw tags from the file (ideal for Tag Editor screens).
      * Thread-safe against native crashes during concurrent edits.
      */
@@ -57,9 +69,6 @@ object CatalogEditor {
             return@withContext TagLib.getMetadata(track.path) ?: emptyMap()
         }
     }
-
-    
-    
 
     /**
      * Updates metadata and/or artwork in a SINGLE pass.
@@ -94,7 +103,7 @@ object CatalogEditor {
             try {
                 context.contentResolver.openInputStream(track.uri)?.use { input ->
                     FileOutputStream(cacheFile).use { output ->
-                        input.copyTo(output)
+                        input.fastCopyTo(output)
                     }
                 } ?: return@withContext EditResult.IOError("Failed to open input stream for copying.")
             } catch (e: IOException) {
@@ -171,7 +180,7 @@ object CatalogEditor {
 
                     outputStream.use { output ->
                         FileInputStream(cacheFile).use { input ->
-                            input.copyTo(output)
+                            input.fastCopyTo(output)
                         }
                     }
                 }
@@ -220,7 +229,13 @@ object CatalogEditor {
      * ensuring O(1) mathematical URI resolution without hardcoding string paths or traversing Document files.
      */
     private fun getFastSafUri(context: Context, path: String): Uri? {
-        val file = File(path)
+        val file = try {
+            File(path).canonicalFile
+        } catch (e: Exception) {
+            File(path)
+        }
+        val canonicalPath = file.absolutePath
+
         val storageManager = context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
         val volume = storageManager.getStorageVolume(file) ?: return null
         
@@ -228,10 +243,23 @@ object CatalogEditor {
         val volumeName = if (volume.isPrimary) "primary" else volume.uuid ?: return null
         
         // 2. Find the relative path of the file on that volume
-        val rootPath = if (volume.isPrimary) "/storage/emulated/0/" else "/storage/$volumeName/"
-        if (!path.startsWith(rootPath)) return null
+        val rootPath = if (volume.isPrimary) {
+            "/storage/emulated/0/"
+        } else {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && volume.directory != null) {
+                "${volume.directory!!.absolutePath.trimEnd('/')}/"
+            } else {
+                "/storage/$volumeName/"
+            }
+        }
         
-        val relativePath = path.substringAfter(rootPath)
+        val relativePath = if (canonicalPath.startsWith(rootPath)) {
+            canonicalPath.substringAfter(rootPath)
+        } else if (volume.isPrimary && canonicalPath.startsWith("/sdcard/")) {
+            canonicalPath.substringAfter("/sdcard/")
+        } else {
+            return null
+        }
         
         // 3. The exact Document ID for this specific file
         val documentId = "$volumeName:$relativePath"
@@ -242,17 +270,27 @@ object CatalogEditor {
             if (!permission.isWritePermission) continue
             
             val treeUri = permission.uri
-            val treeDocumentId = DocumentsContract.getTreeDocumentId(treeUri)
+            val treeDocumentId = try {
+                DocumentsContract.getTreeDocumentId(treeUri)
+            } catch (e: Exception) {
+                continue
+            }
             
-            // Ensure exact folder boundary (prevent "Music2" matching "Music")
-            if (documentId.startsWith(treeDocumentId)) {
-                if (documentId.length == treeDocumentId.length || documentId[treeDocumentId.length] == '/') {
-                    return DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId)
-                }
+            // Check root volume match
+            val isVolumeRoot = treeDocumentId == "$volumeName:" || 
+                               treeDocumentId == volumeName || 
+                               treeDocumentId == "$volumeName:/"
+            if (isVolumeRoot) {
+                return DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId)
+            }
+            
+            // Check parent folder match
+            val cleanTreeId = treeDocumentId.trimEnd('/')
+            if (documentId.startsWith("$cleanTreeId/")) {
+                return DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId)
             }
         }
         
-        // No matching folder permission found
         return null
     }
 }
