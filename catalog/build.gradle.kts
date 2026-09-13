@@ -53,7 +53,7 @@ dependencies {
 
 
 mavenPublishing {
-    coordinates("io.github.amanrajaryan", "Catalog", "1.2.3")
+    coordinates("io.github.amanrajaryan", "Catalog", "1.2.4")
 
     pom {
         name.set("catalog")

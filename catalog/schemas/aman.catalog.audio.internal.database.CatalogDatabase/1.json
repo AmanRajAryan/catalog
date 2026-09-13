@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "c385d364bbd7250d84866f547e523f86",
+    "identityHash": "9f4fc56f2028f0d3b7bf76189bbb64e5",
     "entities": [
       {
         "tableName": "tracks",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `mediaStoreId` INTEGER NOT NULL, `albumId` INTEGER, `path` TEXT NOT NULL, `folderName` TEXT NOT NULL, `folderPath` TEXT NOT NULL, `title` TEXT NOT NULL, `sizeBytes` INTEGER NOT NULL, `dateAdded` INTEGER NOT NULL, `dateModified` INTEGER NOT NULL, `mimeType` TEXT NOT NULL, `artistDisplay` TEXT NOT NULL, `albumDisplay` TEXT NOT NULL, `albumArtistDisplay` TEXT NOT NULL, `genreDisplay` TEXT NOT NULL, `composerDisplay` TEXT NOT NULL, `lyricistDisplay` TEXT NOT NULL, `durationMs` INTEGER NOT NULL, `year` INTEGER NOT NULL, `releaseDate` TEXT NOT NULL, `trackNumber` INTEGER NOT NULL, `discNumber` INTEGER NOT NULL, `rawArtistString` TEXT NOT NULL, `rawGenreString` TEXT NOT NULL, `rawComposerString` TEXT NOT NULL, `rawLyricistString` TEXT NOT NULL, `rawAlbumArtistString` TEXT NOT NULL, `rawAlbumString` TEXT NOT NULL, `contentRating` INTEGER NOT NULL, `bitrate` INTEGER NOT NULL, `sampleRate` INTEGER NOT NULL, `channels` INTEGER NOT NULL, `codec` TEXT NOT NULL, `bitsPerSample` INTEGER NOT NULL, `hasLyrics` INTEGER NOT NULL, `replayGainTrackGain` REAL NOT NULL, `replayGainTrackPeak` REAL NOT NULL, `replayGainAlbumGain` REAL NOT NULL, `replayGainAlbumPeak` REAL NOT NULL, `playCount` INTEGER NOT NULL, `lastPlayed` INTEGER NOT NULL, `totalPlayTimeMs` INTEGER NOT NULL, `skipCount` INTEGER NOT NULL, FOREIGN KEY(`albumId`) REFERENCES `albums`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `mediaStoreId` INTEGER NOT NULL, `albumId` INTEGER, `path` TEXT NOT NULL, `folderName` TEXT NOT NULL, `folderPath` TEXT NOT NULL, `title` TEXT NOT NULL, `sizeBytes` INTEGER NOT NULL, `dateAdded` INTEGER NOT NULL, `dateModified` INTEGER NOT NULL DEFAULT 0, `mimeType` TEXT NOT NULL, `artistDisplay` TEXT NOT NULL, `albumDisplay` TEXT NOT NULL, `albumArtistDisplay` TEXT NOT NULL, `genreDisplay` TEXT NOT NULL, `composerDisplay` TEXT NOT NULL, `lyricistDisplay` TEXT NOT NULL, `durationMs` INTEGER NOT NULL, `year` INTEGER NOT NULL, `releaseDate` TEXT NOT NULL, `trackNumber` INTEGER NOT NULL, `discNumber` INTEGER NOT NULL, `rawArtistString` TEXT NOT NULL, `rawGenreString` TEXT NOT NULL, `rawComposerString` TEXT NOT NULL, `rawLyricistString` TEXT NOT NULL, `rawAlbumArtistString` TEXT NOT NULL, `rawAlbumString` TEXT NOT NULL, `contentRating` INTEGER NOT NULL DEFAULT 0, `bitrate` INTEGER NOT NULL DEFAULT 0, `sampleRate` INTEGER NOT NULL DEFAULT 0, `channels` INTEGER NOT NULL DEFAULT 2, `codec` TEXT NOT NULL DEFAULT '', `bitsPerSample` INTEGER NOT NULL DEFAULT 0, `hasLyrics` INTEGER NOT NULL DEFAULT 0, `replayGainTrackGain` REAL NOT NULL DEFAULT 0.0, `replayGainTrackPeak` REAL NOT NULL DEFAULT 0.0, `replayGainAlbumGain` REAL NOT NULL DEFAULT 0.0, `replayGainAlbumPeak` REAL NOT NULL DEFAULT 0.0, `playCount` INTEGER NOT NULL DEFAULT 0, `lastPlayed` INTEGER NOT NULL DEFAULT 0, `totalPlayTimeMs` INTEGER NOT NULL DEFAULT 0, `skipCount` INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(`albumId`) REFERENCES `albums`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "id",
@@ -65,7 +65,8 @@
             "fieldPath": "dateModified",
             "columnName": "dateModified",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "mimeType",
@@ -179,91 +180,106 @@
             "fieldPath": "contentRating",
             "columnName": "contentRating",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "bitrate",
             "columnName": "bitrate",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "sampleRate",
             "columnName": "sampleRate",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "channels",
             "columnName": "channels",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "2"
           },
           {
             "fieldPath": "codec",
             "columnName": "codec",
             "affinity": "TEXT",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "''"
           },
           {
             "fieldPath": "bitsPerSample",
             "columnName": "bitsPerSample",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "hasLyrics",
             "columnName": "hasLyrics",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "replayGainTrackGain",
             "columnName": "replayGainTrackGain",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0.0"
           },
           {
             "fieldPath": "replayGainTrackPeak",
             "columnName": "replayGainTrackPeak",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0.0"
           },
           {
             "fieldPath": "replayGainAlbumGain",
             "columnName": "replayGainAlbumGain",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0.0"
           },
           {
             "fieldPath": "replayGainAlbumPeak",
             "columnName": "replayGainAlbumPeak",
             "affinity": "REAL",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0.0"
           },
           {
             "fieldPath": "playCount",
             "columnName": "playCount",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "lastPlayed",
             "columnName": "lastPlayed",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "totalPlayTimeMs",
             "columnName": "totalPlayTimeMs",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "skipCount",
             "columnName": "skipCount",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           }
         ],
         "primaryKey": {
@@ -353,7 +369,7 @@
       },
       {
         "tableName": "artists",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `playCount` INTEGER NOT NULL, `lastPlayed` INTEGER NOT NULL, `totalPlayTimeMs` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `playCount` INTEGER NOT NULL DEFAULT 0, `lastPlayed` INTEGER NOT NULL DEFAULT 0, `totalPlayTimeMs` INTEGER NOT NULL DEFAULT 0)",
         "fields": [
           {
             "fieldPath": "id",
@@ -371,19 +387,22 @@
             "fieldPath": "playCount",
             "columnName": "playCount",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "lastPlayed",
             "columnName": "lastPlayed",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "totalPlayTimeMs",
             "columnName": "totalPlayTimeMs",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           }
         ],
         "primaryKey": {
@@ -406,7 +425,7 @@
       },
       {
         "tableName": "albums",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `albumArtistId` INTEGER, `folderGroup` TEXT NOT NULL, `playCount` INTEGER NOT NULL, `lastPlayed` INTEGER NOT NULL, `totalPlayTimeMs` INTEGER NOT NULL, FOREIGN KEY(`albumArtistId`) REFERENCES `artists`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `albumArtistId` INTEGER, `folderGroup` TEXT NOT NULL, `playCount` INTEGER NOT NULL DEFAULT 0, `lastPlayed` INTEGER NOT NULL DEFAULT 0, `totalPlayTimeMs` INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(`albumArtistId`) REFERENCES `artists`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "id",
@@ -435,19 +454,22 @@
             "fieldPath": "playCount",
             "columnName": "playCount",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "lastPlayed",
             "columnName": "lastPlayed",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "totalPlayTimeMs",
             "columnName": "totalPlayTimeMs",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           }
         ],
         "primaryKey": {
@@ -494,7 +516,7 @@
       },
       {
         "tableName": "genres",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `playCount` INTEGER NOT NULL, `lastPlayed` INTEGER NOT NULL, `totalPlayTimeMs` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `playCount` INTEGER NOT NULL DEFAULT 0, `lastPlayed` INTEGER NOT NULL DEFAULT 0, `totalPlayTimeMs` INTEGER NOT NULL DEFAULT 0)",
         "fields": [
           {
             "fieldPath": "id",
@@ -512,19 +534,22 @@
             "fieldPath": "playCount",
             "columnName": "playCount",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "lastPlayed",
             "columnName": "lastPlayed",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "totalPlayTimeMs",
             "columnName": "totalPlayTimeMs",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           }
         ],
         "primaryKey": {
@@ -547,7 +572,7 @@
       },
       {
         "tableName": "composers",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `playCount` INTEGER NOT NULL, `lastPlayed` INTEGER NOT NULL, `totalPlayTimeMs` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `playCount` INTEGER NOT NULL DEFAULT 0, `lastPlayed` INTEGER NOT NULL DEFAULT 0, `totalPlayTimeMs` INTEGER NOT NULL DEFAULT 0)",
         "fields": [
           {
             "fieldPath": "id",
@@ -565,19 +590,22 @@
             "fieldPath": "playCount",
             "columnName": "playCount",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "lastPlayed",
             "columnName": "lastPlayed",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "totalPlayTimeMs",
             "columnName": "totalPlayTimeMs",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           }
         ],
         "primaryKey": {
@@ -600,7 +628,7 @@
       },
       {
         "tableName": "lyricists",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `playCount` INTEGER NOT NULL, `lastPlayed` INTEGER NOT NULL, `totalPlayTimeMs` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `playCount` INTEGER NOT NULL DEFAULT 0, `lastPlayed` INTEGER NOT NULL DEFAULT 0, `totalPlayTimeMs` INTEGER NOT NULL DEFAULT 0)",
         "fields": [
           {
             "fieldPath": "id",
@@ -618,19 +646,22 @@
             "fieldPath": "playCount",
             "columnName": "playCount",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "lastPlayed",
             "columnName": "lastPlayed",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           },
           {
             "fieldPath": "totalPlayTimeMs",
             "columnName": "totalPlayTimeMs",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           }
         ],
         "primaryKey": {
@@ -653,7 +684,7 @@
       },
       {
         "tableName": "favorites",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`trackId` INTEGER NOT NULL, `dateMarked` INTEGER NOT NULL, `sortOrder` INTEGER NOT NULL, PRIMARY KEY(`trackId`), FOREIGN KEY(`trackId`) REFERENCES `tracks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`trackId` INTEGER NOT NULL, `dateMarked` INTEGER NOT NULL, `sortOrder` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`trackId`), FOREIGN KEY(`trackId`) REFERENCES `tracks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "trackId",
@@ -671,7 +702,8 @@
             "fieldPath": "sortOrder",
             "columnName": "sortOrder",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "0"
           }
         ],
         "primaryKey": {
@@ -1088,7 +1120,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c385d364bbd7250d84866f547e523f86')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9f4fc56f2028f0d3b7bf76189bbb64e5')"
     ]
   }
 }

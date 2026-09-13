@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "aman.catalogtest"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "aman.catalogtest"

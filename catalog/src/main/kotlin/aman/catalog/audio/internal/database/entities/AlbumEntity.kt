@@ -1,5 +1,6 @@
 package aman.catalog.audio.internal.database.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -31,8 +32,8 @@ data class AlbumEntity(
     // Folder path when the tag is absent (scoped grouping to prevent unrelated albums merging).
     val folderGroup: String,
 
-    val playCount: Int = 0,
-    val lastPlayed: Long = 0,
-    val totalPlayTimeMs: Long = 0
+    @ColumnInfo(defaultValue = "0") val playCount: Int = 0,
+    @ColumnInfo(defaultValue = "0") val lastPlayed: Long = 0,
+    @ColumnInfo(defaultValue = "0") val totalPlayTimeMs: Long = 0
 )
 

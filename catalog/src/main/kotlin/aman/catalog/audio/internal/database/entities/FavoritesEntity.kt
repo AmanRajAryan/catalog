@@ -1,5 +1,6 @@
 package aman.catalog.audio.internal.database.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -20,5 +21,5 @@ import androidx.room.Index
 data class FavoritesEntity(
     val trackId: Long,
     val dateMarked: Long,
-    val sortOrder: Int = 0
+    @ColumnInfo(defaultValue = "0") val sortOrder: Int = 0
 )

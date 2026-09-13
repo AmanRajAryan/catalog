@@ -1,5 +1,6 @@
 package aman.catalog.audio.internal.database.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -13,9 +14,9 @@ data class ArtistEntity(
     val name: String,
     
         
-    val playCount: Int = 0,
-    val lastPlayed: Long = 0,
-    val totalPlayTimeMs: Long = 0
+    @ColumnInfo(defaultValue = "0") val playCount: Int = 0,
+    @ColumnInfo(defaultValue = "0") val lastPlayed: Long = 0,
+    @ColumnInfo(defaultValue = "0") val totalPlayTimeMs: Long = 0
 )
 
 

@@ -1,5 +1,6 @@
 package aman.catalog.audio.internal.database.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -43,7 +44,7 @@ data class TrackEntity(
     val title: String,
     val sizeBytes: Long,
     val dateAdded: Long,
-    val dateModified: Long = 0,
+    @ColumnInfo(defaultValue = "0") val dateModified: Long = 0,
     val mimeType: String,
 
     // Denormalized display strings kept here for fast sorting without joins.
@@ -71,22 +72,22 @@ data class TrackEntity(
     // albumDisplay can fall back to the MediaStore value.
     val rawAlbumString: String,
 
-    val contentRating: Int = 0,
-    val bitrate: Int = 0,
-    val sampleRate: Int = 0,
-    val channels: Int = 2,
-    val codec: String = "",
-    val bitsPerSample: Int = 0,
+    @ColumnInfo(defaultValue = "0") val contentRating: Int = 0,
+    @ColumnInfo(defaultValue = "0") val bitrate: Int = 0,
+    @ColumnInfo(defaultValue = "0") val sampleRate: Int = 0,
+    @ColumnInfo(defaultValue = "2") val channels: Int = 2,
+    @ColumnInfo(defaultValue = "''") val codec: String = "",
+    @ColumnInfo(defaultValue = "0") val bitsPerSample: Int = 0,
     
-    val hasLyrics: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val hasLyrics: Boolean = false,
 
-    val replayGainTrackGain: Double = 0.0,
-    val replayGainTrackPeak: Double = 0.0,
-    val replayGainAlbumGain: Double = 0.0,
-    val replayGainAlbumPeak: Double = 0.0,
+    @ColumnInfo(defaultValue = "0.0") val replayGainTrackGain: Double = 0.0,
+    @ColumnInfo(defaultValue = "0.0") val replayGainTrackPeak: Double = 0.0,
+    @ColumnInfo(defaultValue = "0.0") val replayGainAlbumGain: Double = 0.0,
+    @ColumnInfo(defaultValue = "0.0") val replayGainAlbumPeak: Double = 0.0,
 
-    val playCount: Int = 0,
-    val lastPlayed: Long = 0,
-    val totalPlayTimeMs: Long = 0,
-    val skipCount: Int = 0
+    @ColumnInfo(defaultValue = "0") val playCount: Int = 0,
+    @ColumnInfo(defaultValue = "0") val lastPlayed: Long = 0,
+    @ColumnInfo(defaultValue = "0") val totalPlayTimeMs: Long = 0,
+    @ColumnInfo(defaultValue = "0") val skipCount: Int = 0
 )
