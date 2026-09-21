@@ -48,7 +48,7 @@ viewModelScope.launch {
 suspend fun updateTrack(
     context: Context,
     track: Track,
-    newTags: Map<String, String>? = null,
+    newTags: Map<String, String?>? = null,
     artworkUpdate: ArtworkUpdate = ArtworkUpdate.NoChange,
     allowMediaStoreFallback: Boolean = true
 ): EditResult
@@ -96,7 +96,7 @@ val result = CatalogEditor.updateTrack(
 |---|---|
 | `context` | Any context. Used for ContentResolver access. |
 | `track` | The track to edit. Must have a valid `uri`. |
-| `newTags` | Tag key-value pairs to write. Pass `null` to leave tags unchanged. |
+| `newTags` | Tag key-value pairs to write. Pass `null` to leave tags unchanged. Keys omitted from the map are preserved. Pass `null` or `""` as value to delete a tag. |
 | `artworkUpdate` | How to handle artwork. Defaults to `NoChange`. |
 | `allowMediaStoreFallback` | Whether to fall back to MediaStore if no SAF permission covers the file. See [SAF permissions](#saf-permissions). Defaults to `true`. |
 

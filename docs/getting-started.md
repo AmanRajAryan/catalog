@@ -1,5 +1,7 @@
 # Getting Started
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.amanrajaryan/Catalog.svg)](https://central.sonatype.com/artifact/io.github.amanrajaryan/Catalog)
+
 ## Table of Contents
 
 1. [Permissions](#permissions)
@@ -39,7 +41,7 @@ Add the dependency to your module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-     implementation("io.github.amanrajaryan:Catalog:1.2.5")
+     implementation("io.github.amanrajaryan:Catalog:<version>")
 }
 ```
 

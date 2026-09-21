@@ -77,7 +77,7 @@ object CatalogEditor {
     suspend fun updateTrack(
         context: Context,
         track: Track,
-        newTags: Map<String, String>? = null,
+        newTags: Map<String, String?>? = null,
         artworkUpdate: ArtworkUpdate = ArtworkUpdate.NoChange,
         allowMediaStoreFallback: Boolean = true
     ): EditResult = withContext(Dispatchers.IO) {
@@ -111,7 +111,8 @@ object CatalogEditor {
             }
 
             if (newTags != null) {
-                val tagSuccess = TagLib.setMetadata(cacheFile.absolutePath, newTags)
+                val sanitizedTags = newTags.mapValues { it.value ?: "" }
+                val tagSuccess = TagLib.setMetadata(cacheFile.absolutePath, sanitizedTags)
                 if (!tagSuccess) {
                     return@withContext EditResult.TagWriteFailed
                 }

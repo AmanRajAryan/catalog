@@ -1,5 +1,7 @@
 # Catalog
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.amanrajaryan/Catalog.svg)](https://central.sonatype.com/artifact/io.github.amanrajaryan/Catalog)
+
 Catalog is an Android library that turns a device's local audio files into a fully queryable, reactive music library.
 
 It scans `MediaStore`, enriches each file with deep metadata from TagLib (composers, lyricists, embedded artwork, bitrate, sample rate, and more), persists everything in a local Room database, and exposes the whole thing as Kotlin `Flow` — so your UI stays in sync automatically without any manual refresh logic.
