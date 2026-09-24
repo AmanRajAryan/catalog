@@ -78,6 +78,7 @@ data class ExtendedMetadata(
     val foundArtist: String = "",
     val foundAlbum: String = "",
     val foundGenre: String = "",
+    val foundDuration: Long = 0L,
     val hasLyrics: Boolean = false
 ) {
     companion object {
@@ -88,6 +89,7 @@ data class ExtendedMetadata(
             channels = 2,
             codec = "",
             bitsPerSample = 0,
+            foundDuration = 0L,
             hasLyrics = false
         )
     }

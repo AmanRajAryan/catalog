@@ -9,6 +9,61 @@ internal class TrackIngestor(
     var splitter: SmartSplitter
 ) {
 
+    private val artistCache = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    private val albumCache = java.util.concurrent.ConcurrentHashMap<Triple<String, Long, String>, Long>()
+    private val genreCache = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    private val composerCache = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    private val lyricistCache = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
+    fun clearCache() {
+        artistCache.clear()
+        albumCache.clear()
+        genreCache.clear()
+        composerCache.clear()
+        lyricistCache.clear()
+    }
+
+    private suspend fun getOrInsertArtist(name: String): Long {
+        val cached = artistCache[name]
+        if (cached != null) return cached
+        val id = db.artistDao().insertOrGetId(name)
+        artistCache[name] = id
+        return id
+    }
+
+    private suspend fun getOrInsertAlbum(name: String, artistId: Long, folderGroup: String): Long {
+        val key = Triple(name, artistId, folderGroup)
+        val cached = albumCache[key]
+        if (cached != null) return cached
+        val id = db.albumDao().insertOrGetId(name, artistId, folderGroup)
+        albumCache[key] = id
+        return id
+    }
+
+    private suspend fun getOrInsertGenre(name: String): Long {
+        val cached = genreCache[name]
+        if (cached != null) return cached
+        val id = db.genreDao().insertOrGetId(name)
+        genreCache[name] = id
+        return id
+    }
+
+    private suspend fun getOrInsertComposer(name: String): Long {
+        val cached = composerCache[name]
+        if (cached != null) return cached
+        val id = db.composerDao().insertOrGetId(name)
+        composerCache[name] = id
+        return id
+    }
+
+    private suspend fun getOrInsertLyricist(name: String): Long {
+        val cached = lyricistCache[name]
+        if (cached != null) return cached
+        val id = db.lyricistDao().insertOrGetId(name)
+        lyricistCache[name] = id
+        return id
+    }
+
     suspend fun ingestNewTrack(
         skeleton: SkeletonTrack,
         extendedMeta: ExtendedMetadata
@@ -18,7 +73,7 @@ internal class TrackIngestor(
 
         // Always call insertOrGetId() even for a blank Album Artist — the DAO handles it
         // gracefully, ensuring every track belongs to a valid queryable artist entry.
-        val albumArtistId = db.artistDao().insertOrGetId(finalAlbumArtist)
+        val albumArtistId = getOrInsertArtist(finalAlbumArtist)
 
         // A real Album Artist tag ("Pink Floyd") means multiple folders may belong to the same
         // release (e.g. multi-disc albums split across Disc 1/ and Disc 2/), so we use global
@@ -28,7 +83,9 @@ internal class TrackIngestor(
         val folderGroup = if (finalAlbumArtist.isNotBlank()) "" else processed.folderPath
 
         // Prefer TagLib's album title over MediaStore's — MediaStore can hold stale or garbage data.
-        val finalAlbumId = db.albumDao().insertOrGetId(processed.validAlbum, albumArtistId, folderGroup)
+        val finalAlbumId = getOrInsertAlbum(processed.validAlbum, albumArtistId, folderGroup)
+
+        val finalDuration = if (skeleton.duration > 0) skeleton.duration else extendedMeta.foundDuration
 
         val trackEntity = TrackEntity(
             mediaStoreId = skeleton.mediaStoreId,
@@ -41,7 +98,7 @@ internal class TrackIngestor(
             dateAdded = skeleton.dateAdded,
             dateModified = skeleton.dateModified,
             mimeType = skeleton.mimeType,
-            durationMs = skeleton.duration,
+            durationMs = finalDuration,
             artistDisplay = processed.validArtist,
             albumDisplay = processed.validAlbum,
             albumArtistDisplay = finalAlbumArtist,
@@ -85,14 +142,14 @@ internal class TrackIngestor(
             processCommonFields(skeleton, extendedMeta, trustTagLibFirst)
 
         // Always call insertOrGetId() even for a blank Album Artist — same reasoning as ingestNewTrack.
-        val albumArtistId = db.artistDao().insertOrGetId(finalAlbumArtist)
+        val albumArtistId = getOrInsertArtist(finalAlbumArtist)
 
         // Real Album Artist → global grouping so multi-disc albums merge across folders.
         // Blank Album Artist → folder-scoped grouping to prevent unrelated albums from merging.
         val folderGroup = if (finalAlbumArtist.isNotBlank()) "" else processed.folderPath
 
         // Prefer TagLib's album title — MediaStore may not have caught up after a rename.
-        val finalAlbumId = db.albumDao().insertOrGetId(processed.validAlbum, albumArtistId, folderGroup)
+        val finalAlbumId = getOrInsertAlbum(processed.validAlbum, albumArtistId, folderGroup)
 
         // If the track is moving to a different album and the old album only had this one track,
         // it's about to be GC'd — transfer its play stats so history isn't lost on a rename.
@@ -103,6 +160,8 @@ internal class TrackIngestor(
                 db.albumDao().mergePlayStats(fromId = oldAlbumId, toId = finalAlbumId)
             }
         }
+
+        val finalDuration = if (skeleton.duration > 0) skeleton.duration else extendedMeta.foundDuration
 
         db.trackDao().updateTrackMetadata(
             id = id,
@@ -115,7 +174,7 @@ internal class TrackIngestor(
             size = skeleton.size,
             dateModified = skeleton.dateModified,
             mimeType = skeleton.mimeType,
-            duration = skeleton.duration,
+            duration = finalDuration,
             artist = processed.validArtist,
             album = processed.validAlbum,
             albumArtist = finalAlbumArtist,
@@ -166,7 +225,7 @@ internal class TrackIngestor(
         val newArtists = splitter.split(rawArtist)
         db.trackDao().deleteArtistRefs(trackId)
         val artistRefs = newArtists.map { name ->
-            val id = db.artistDao().insertOrGetId(name)
+            val id = getOrInsertArtist(name)
             TrackArtistRef(trackId, id)
         }
         if (artistRefs.isNotEmpty()) db.trackDao().insertArtistRefs(artistRefs)
@@ -174,7 +233,7 @@ internal class TrackIngestor(
         val newComposers = splitter.split(rawComposer)
         db.trackDao().deleteComposerRefs(trackId)
         val composerRefs = newComposers.map { name ->
-            val id = db.composerDao().insertOrGetId(name)
+            val id = getOrInsertComposer(name)
             TrackComposerRef(trackId, id)
         }
         if (composerRefs.isNotEmpty()) db.trackDao().insertComposerRefs(composerRefs)
@@ -182,7 +241,7 @@ internal class TrackIngestor(
         val newLyricists = splitter.split(rawLyricist)
         db.trackDao().deleteLyricistRefs(trackId)
         val lyricistRefs = newLyricists.map { name ->
-            val id = db.lyricistDao().insertOrGetId(name)
+            val id = getOrInsertLyricist(name)
             TrackLyricistRef(trackId, id)
         }
         if (lyricistRefs.isNotEmpty()) db.trackDao().insertLyricistRefs(lyricistRefs)
@@ -190,13 +249,14 @@ internal class TrackIngestor(
         val newGenres = splitter.split(rawGenre)
         db.trackDao().deleteGenreRefs(trackId)
         val genreRefs = newGenres.map { name ->
-            val id = db.genreDao().insertOrGetId(name)
+            val id = getOrInsertGenre(name)
             TrackGenreRef(trackId, id)
         }
         if (genreRefs.isNotEmpty()) db.trackDao().insertGenreRefs(genreRefs)
     }
 
     suspend fun performGarbageCollection() {
+        clearCache()
         db.albumDao().deleteEmptyAlbums()
         db.artistDao().deleteEmptyArtists()
         db.genreDao().deleteEmptyGenres()
@@ -208,25 +268,25 @@ internal class TrackIngestor(
 
     private suspend fun insertJunctions(trackId: Long, data: ProcessedData) {
         val artistRefs = data.trackArtists.map { name ->
-            val artistId = db.artistDao().insertOrGetId(name)
+            val artistId = getOrInsertArtist(name)
             TrackArtistRef(trackId, artistId)
         }
         if (artistRefs.isNotEmpty()) db.trackDao().insertArtistRefs(artistRefs)
 
         val composerRefs = data.trackComposers.map { name ->
-            val composerId = db.composerDao().insertOrGetId(name)
+            val composerId = getOrInsertComposer(name)
             TrackComposerRef(trackId, composerId)
         }
         if (composerRefs.isNotEmpty()) db.trackDao().insertComposerRefs(composerRefs)
 
         val lyricistRefs = data.trackLyricists.map { name ->
-            val lyricistId = db.lyricistDao().insertOrGetId(name)
+            val lyricistId = getOrInsertLyricist(name)
             TrackLyricistRef(trackId, lyricistId)
         }
         if (lyricistRefs.isNotEmpty()) db.trackDao().insertLyricistRefs(lyricistRefs)
 
         val genreRefs = data.trackGenres.map { name ->
-            val genreId = db.genreDao().insertOrGetId(name)
+            val genreId = getOrInsertGenre(name)
             TrackGenreRef(trackId, genreId)
         }
         if (genreRefs.isNotEmpty()) db.trackDao().insertGenreRefs(genreRefs)

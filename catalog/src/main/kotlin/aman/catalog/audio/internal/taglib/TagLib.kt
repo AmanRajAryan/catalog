@@ -2,6 +2,7 @@ package aman.catalog.audio.internal.taglib
 
 import android.media.MediaExtractor
 import android.media.MediaFormat
+import android.media.MediaMetadataRetriever
 import android.util.Log
 import aman.catalog.audio.models.ExtendedMetadata
 import aman.catalog.audio.models.TrackPicture
@@ -29,10 +30,23 @@ object TagLibHelper {
             var channels = rawMap["CHANNELS"]?.toIntOrNull() ?: 0
             var bits = rawMap["BITS_PER_SAMPLE"]?.toIntOrNull() ?: 0
             var rawFormat = rawMap["FORMAT"] ?: ""
+            var durationMs = rawMap["DURATION_SEC"]?.toLongOrNull()?.times(1000L) ?: 0L
 
-            // Fall back to Android's MediaExtractor if TagLib couldn't determine bitrate,
-            // sample rate, or channel count.
-            if (bitrate == 0 || channels == 0 || sampleRate == 0) {
+            // 1. Direct MP4 DASH/fragmented header parser
+            if (durationMs == 0L) {
+                try {
+                    val dashDur = parseMp4DashDuration(path)
+                    if (dashDur > 0L) {
+                        durationMs = dashDur
+                    }
+                } catch (e: Exception) {
+                    Log.w("TagLibHelper", "DASH duration parse failed for $path", e)
+                }
+            }
+
+            // 2. Fall back to Android's MediaExtractor if TagLib couldn't determine
+            // bitrate, sample rate, channel count, or duration.
+            if (bitrate == 0 || channels == 0 || sampleRate == 0 || durationMs == 0L) {
                 try {
                     val androidStats = getAndroidAudioStats(path)
                     if (androidStats.isValid) {
@@ -40,16 +54,35 @@ object TagLibHelper {
                         if (sampleRate == 0) sampleRate = androidStats.sampleRate
                         if (channels == 0) channels = androidStats.channels
                         if (rawFormat.isBlank()) rawFormat = androidStats.prettyFormat
+                        if (durationMs == 0L) durationMs = androidStats.durationMs
                     }
                 } catch (e: Exception) {
                     Log.w("TagLibHelper", "Android Extractor failed for $path", e)
                 }
             }
 
-            // Last resort: estimate bitrate from file size / duration.
-            // Inaccurate for files with large embedded artwork, but better than returning 0.
+            // 3. Fall back to MediaMetadataRetriever if duration is still 0
+            if (durationMs == 0L) {
+                try {
+                    val retriever = MediaMetadataRetriever()
+                    try {
+                        retriever.setDataSource(path)
+                        val durStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                        val parsedDur = durStr?.toLongOrNull() ?: 0L
+                        if (parsedDur > 0L) {
+                            durationMs = parsedDur
+                        }
+                    } finally {
+                        retriever.release()
+                    }
+                } catch (e: Exception) {
+                    Log.w("TagLibHelper", "MediaMetadataRetriever failed for $path", e)
+                }
+            }
+
+            // 4. Last resort: estimate bitrate from file size / duration.
             if (bitrate == 0) {
-                bitrate = calculateBitrate(path)
+                bitrate = calculateBitrate(path, durationMs)
             }
 
             val composer = rawMap["COMPOSER"] ?: ""
@@ -108,6 +141,7 @@ object TagLibHelper {
                 foundArtist = artist,
                 foundAlbum = album,
                 foundGenre = genre,
+                foundDuration = durationMs,
                 hasLyrics = hasLyrics
             )
 
@@ -145,12 +179,17 @@ object TagLibHelper {
      *
      * Used ONLY as last-resort fallback.
      */
-    private fun calculateBitrate(path: String): Int {
+    private fun calculateBitrate(path: String, knownDurationMs: Long = 0L): Int {
         try {
             val file = File(path)
             if (!file.exists()) return 0
 
             val sizeInBits = file.length() * 8
+            if (knownDurationMs > 0L) {
+                val durationSec = knownDurationMs / 1000.0
+                return (sizeInBits / durationSec / 1000).toInt()
+            }
+
             val extractor = MediaExtractor()
             try {
                 extractor.setDataSource(path)
@@ -183,7 +222,8 @@ object TagLibHelper {
         val sampleRate: Int,
         val channels: Int,
         val prettyFormat: String,
-        val isValid: Boolean
+        val isValid: Boolean,
+        val durationMs: Long = 0L
     )
 
     private fun getAndroidAudioStats(path: String): AndroidStats {
@@ -204,6 +244,9 @@ object TagLibHelper {
                     val br = if (format.containsKey(MediaFormat.KEY_BIT_RATE))
                         format.getInteger(MediaFormat.KEY_BIT_RATE) / 1000 else 0
 
+                    val durMs = if (format.containsKey(MediaFormat.KEY_DURATION))
+                        format.getLong(MediaFormat.KEY_DURATION) / 1000L else 0L
+
                     val prettyCodec = when (mime) {
                         "audio/ac3" -> "Dolby Digital"
                         "audio/eac3" -> "Dolby Digital+"
@@ -213,14 +256,14 @@ object TagLibHelper {
                         else -> mime.substringAfter("/")
                     }
 
-                    return AndroidStats(br, sr, ch, prettyCodec, true)
+                    return AndroidStats(br, sr, ch, prettyCodec, true, durMs)
                 }
             }
         } catch (_: IOException) {
         } finally {
             extractor.release()
         }
-        return AndroidStats(0, 0, 0, "", false)
+        return AndroidStats(0, 0, 0, "", false, 0L)
     }
 
     // Lyrics extraction
@@ -261,5 +304,92 @@ object TagLibHelper {
             return emptyList()
         }
         }
+    }
+
+    /**
+     * Extracts duration from fragmented MP4/DASH containers (e.g. FLAC-in-MP4, DASH streams)
+     * by parsing the `mvex` -> `mehd` (Movie Extends Header) and `mdhd`/`mvhd` timescale atoms.
+     */
+    private fun parseMp4DashDuration(path: String): Long {
+        val file = File(path)
+        if (!file.exists() || file.length() < 32) return 0L
+
+        // Read up to first 1 MB which contains the 'moov' atom and embedded tags/artwork
+        val bufferSize = minOf(file.length(), 1024 * 1024L).toInt()
+        val data = ByteArray(bufferSize)
+        java.io.FileInputStream(file).use { input ->
+            var bytesRead = 0
+            while (bytesRead < bufferSize) {
+                val read = input.read(data, bytesRead, bufferSize - bytesRead)
+                if (read == -1) break
+                bytesRead += read
+            }
+        }
+
+        // 1. Find timescale from mdhd or mvhd
+        var timescale = 0L
+        val mdhdIdx = findSubsequence(data, ATOM_MDHD)
+        if (mdhdIdx != -1 && mdhdIdx + 24 <= data.size) {
+            val version = data[mdhdIdx + 4].toInt()
+            timescale = if (version == 1) readUint32(data, mdhdIdx + 24) else readUint32(data, mdhdIdx + 16)
+        }
+
+        if (timescale <= 0L) {
+            val mvhdIdx = findSubsequence(data, ATOM_MVHD)
+            if (mvhdIdx != -1 && mvhdIdx + 24 <= data.size) {
+                val version = data[mvhdIdx + 4].toInt()
+                timescale = if (version == 1) readUint32(data, mvhdIdx + 24) else readUint32(data, mvhdIdx + 16)
+            }
+        }
+
+        if (timescale <= 0L) return 0L
+
+        // 2. Find fragment duration from mehd (Movie Extends Header)
+        val mehdIdx = findSubsequence(data, ATOM_MEHD)
+        if (mehdIdx != -1 && mehdIdx + 12 <= data.size) {
+            val version = data[mehdIdx + 4].toInt()
+            val fragmentDuration = if (version == 1) readUint64(data, mehdIdx + 8) else readUint32(data, mehdIdx + 8)
+            if (fragmentDuration > 0L) {
+                return (fragmentDuration * 1000L) / timescale
+            }
+        }
+
+        return 0L
+    }
+
+    private val ATOM_MDHD = byteArrayOf('m'.code.toByte(), 'd'.code.toByte(), 'h'.code.toByte(), 'd'.code.toByte())
+    private val ATOM_MVHD = byteArrayOf('m'.code.toByte(), 'v'.code.toByte(), 'h'.code.toByte(), 'd'.code.toByte())
+    private val ATOM_MEHD = byteArrayOf('m'.code.toByte(), 'e'.code.toByte(), 'h'.code.toByte(), 'd'.code.toByte())
+
+    private fun findSubsequence(data: ByteArray, pattern: ByteArray): Int {
+        if (pattern.isEmpty() || pattern.size > data.size) return -1
+        for (i in 0..(data.size - pattern.size)) {
+            var found = true
+            for (j in pattern.indices) {
+                if (data[i + j] != pattern[j]) {
+                    found = false
+                    break
+                }
+            }
+            if (found) return i
+        }
+        return -1
+    }
+
+    private fun readUint32(data: ByteArray, offset: Int): Long {
+        if (offset + 4 > data.size) return 0L
+        return ((data[offset].toLong() and 0xFF) shl 24) or
+               ((data[offset + 1].toLong() and 0xFF) shl 16) or
+               ((data[offset + 2].toLong() and 0xFF) shl 8) or
+               (data[offset + 3].toLong() and 0xFF)
+    }
+
+    private fun readUint64(data: ByteArray, offset: Int): Long {
+        if (offset + 8 > data.size) return 0L
+        var res = 0L
+        for (i in 0 until 8) {
+            res = (res shl 8) or (data[offset + i].toLong() and 0xFF)
+        }
+        return res
     }
 }

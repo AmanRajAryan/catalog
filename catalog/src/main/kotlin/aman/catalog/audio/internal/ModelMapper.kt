@@ -91,6 +91,7 @@ internal object ModelMapper {
                 foundArtist = entity.rawArtistString,
                 foundAlbum = entity.rawAlbumString,
                 foundGenre = entity.rawGenreString,
+                foundDuration = entity.durationMs,
                 hasLyrics = entity.hasLyrics
             )
         )
