@@ -423,9 +423,10 @@ abstract class AlbumDao {
   open suspend fun insertOrGetId(title: String, artistId: Long?, folderGroup: String): Long {
     val existingId = getAlbumId(title, artistId, folderGroup)
     if (existingId != null) return existingId
+    val safeArtistId = if (artistId != null && artistId > 0) artistId else null
     val newId =
-            insert(AlbumEntity(title = title, albumArtistId = artistId, folderGroup = folderGroup))
-    return if (newId == -1L) getAlbumId(title, artistId, folderGroup)!! else newId
+            insert(AlbumEntity(title = title, albumArtistId = safeArtistId, folderGroup = folderGroup))
+    return if (newId == -1L) getAlbumId(title, safeArtistId, folderGroup) ?: 0L else newId
   }
 
   @Query(

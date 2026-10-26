@@ -175,14 +175,19 @@ class ScannerService(
                   }
                 }.awaitAll()
 
-                db.withTransaction {
-                  preparedData.forEach { (skeleton, extendedMeta) ->
-                    val resolvedDuration = if (skeleton.duration > 0) skeleton.duration else extendedMeta.foundDuration
-                    val isTooShort = config.minDurationMs > 0 && resolvedDuration in 1 until config.minDurationMs
-                    if (!isTooShort) {
-                      ingestor.ingestNewTrack(skeleton.copy(duration = resolvedDuration), extendedMeta)
+                try {
+                  db.withTransaction {
+                    preparedData.forEach { (skeleton, extendedMeta) ->
+                      val resolvedDuration = if (skeleton.duration > 0) skeleton.duration else extendedMeta.foundDuration
+                      val isTooShort = config.minDurationMs > 0 && resolvedDuration in 1 until config.minDurationMs
+                      if (!isTooShort) {
+                        ingestor.ingestNewTrack(skeleton.copy(duration = resolvedDuration), extendedMeta)
+                      }
                     }
                   }
+                } catch (e: Exception) {
+                  ingestor.clearCache()
+                  throw e
                 }
               }
             }
@@ -196,14 +201,19 @@ class ScannerService(
                   }
                 }.awaitAll()
 
-                db.withTransaction {
-                  preparedData.forEach { (skeleton, extendedMeta, id) ->
-                    val resolvedDuration = if (skeleton.duration > 0) skeleton.duration else extendedMeta.foundDuration
-                    val isTooShort = config.minDurationMs > 0 && resolvedDuration in 1 until config.minDurationMs
-                    if (!isTooShort) {
-                      ingestor.ingestUpdatedTrack(id, skeleton.copy(duration = resolvedDuration), extendedMeta)
+                try {
+                  db.withTransaction {
+                    preparedData.forEach { (skeleton, extendedMeta, id) ->
+                      val resolvedDuration = if (skeleton.duration > 0) skeleton.duration else extendedMeta.foundDuration
+                      val isTooShort = config.minDurationMs > 0 && resolvedDuration in 1 until config.minDurationMs
+                      if (!isTooShort) {
+                        ingestor.ingestUpdatedTrack(id, skeleton.copy(duration = resolvedDuration), extendedMeta)
+                      }
                     }
                   }
+                } catch (e: Exception) {
+                  ingestor.clearCache()
+                  throw e
                 }
               }
             }
@@ -217,14 +227,19 @@ class ScannerService(
                   }
                 }.awaitAll()
 
-                db.withTransaction {
-                  preparedData.forEach { (skeleton, extendedMeta, id) ->
-                    val resolvedDuration = if (skeleton.duration > 0) skeleton.duration else extendedMeta.foundDuration
-                    val isTooShort = config.minDurationMs > 0 && resolvedDuration in 1 until config.minDurationMs
-                    if (!isTooShort) {
-                      ingestor.ingestUpdatedTrack(id, skeleton.copy(duration = resolvedDuration), extendedMeta)
+                try {
+                  db.withTransaction {
+                    preparedData.forEach { (skeleton, extendedMeta, id) ->
+                      val resolvedDuration = if (skeleton.duration > 0) skeleton.duration else extendedMeta.foundDuration
+                      val isTooShort = config.minDurationMs > 0 && resolvedDuration in 1 until config.minDurationMs
+                      if (!isTooShort) {
+                        ingestor.ingestUpdatedTrack(id, skeleton.copy(duration = resolvedDuration), extendedMeta)
+                      }
                     }
                   }
+                } catch (e: Exception) {
+                  ingestor.clearCache()
+                  throw e
                 }
               }
             }

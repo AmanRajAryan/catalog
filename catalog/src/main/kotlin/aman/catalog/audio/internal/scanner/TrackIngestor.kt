@@ -27,7 +27,7 @@ internal class TrackIngestor(
         val cached = artistCache[name]
         if (cached != null) return cached
         val id = db.artistDao().insertOrGetId(name)
-        artistCache[name] = id
+        if (id > 0) artistCache[name] = id
         return id
     }
 
@@ -36,7 +36,7 @@ internal class TrackIngestor(
         val cached = albumCache[key]
         if (cached != null) return cached
         val id = db.albumDao().insertOrGetId(name, artistId, folderGroup)
-        albumCache[key] = id
+        if (id > 0) albumCache[key] = id
         return id
     }
 
@@ -84,13 +84,14 @@ internal class TrackIngestor(
 
         // Prefer TagLib's album title over MediaStore's — MediaStore can hold stale or garbage data.
         val finalAlbumId = getOrInsertAlbum(processed.validAlbum, albumArtistId, folderGroup)
+        val resolvedAlbumId = if (finalAlbumId > 0) finalAlbumId else null
 
         val finalDuration = if (skeleton.duration > 0) skeleton.duration else extendedMeta.foundDuration
 
         val trackEntity = TrackEntity(
             mediaStoreId = skeleton.mediaStoreId,
             path = skeleton.path,
-            albumId = finalAlbumId,
+            albumId = resolvedAlbumId,
             folderName = processed.folderName,
             folderPath = processed.folderPath,
             title = processed.validTitle,
@@ -150,14 +151,15 @@ internal class TrackIngestor(
 
         // Prefer TagLib's album title — MediaStore may not have caught up after a rename.
         val finalAlbumId = getOrInsertAlbum(processed.validAlbum, albumArtistId, folderGroup)
+        val resolvedAlbumId = if (finalAlbumId > 0) finalAlbumId else null
 
         // If the track is moving to a different album and the old album only had this one track,
         // it's about to be GC'd — transfer its play stats so history isn't lost on a rename.
         val oldAlbumId = db.trackDao().getAlbumIdForTrack(id)
-        if (oldAlbumId != null && oldAlbumId != finalAlbumId) {
+        if (oldAlbumId != null && resolvedAlbumId != null && oldAlbumId != resolvedAlbumId) {
             val remainingTracks = db.albumDao().getTrackCountForAlbum(oldAlbumId)
             if (remainingTracks == 1) {
-                db.albumDao().mergePlayStats(fromId = oldAlbumId, toId = finalAlbumId)
+                db.albumDao().mergePlayStats(fromId = oldAlbumId, toId = resolvedAlbumId)
             }
         }
 
@@ -166,7 +168,7 @@ internal class TrackIngestor(
         db.trackDao().updateTrackMetadata(
             id = id,
             mediaStoreId = skeleton.mediaStoreId,
-            albumId = finalAlbumId,
+            albumId = resolvedAlbumId,
             path = skeleton.path,
             folderName = processed.folderName,
             folderPath = processed.folderPath,
