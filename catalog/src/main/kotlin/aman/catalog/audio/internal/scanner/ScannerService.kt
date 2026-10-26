@@ -100,7 +100,7 @@ class ScannerService(
             val configIgnored = config.scannerIgnores
             val masterBlacklist = (dbIgnored + configIgnored).distinct()
 
-            val systemSkeletons = queryMediaStore(masterBlacklist)
+            val systemSkeletons = queryMediaStore(masterBlacklist).distinctBy { it.path }
             val snapshots = db.trackDao().getTrackSnapshots()
 
             val dbPathMap = snapshots.associateBy { it.path }
@@ -367,7 +367,10 @@ class ScannerService(
                 add(MediaStore.Audio.Media.TITLE)
                 add(MediaStore.Audio.Media.ARTIST)
                 add(MediaStore.Audio.Media.ALBUM)
-                add("album_artist")
+                if (android.os.Build.VERSION.SDK_INT >= 30) {
+                    add(MediaStore.Audio.Media.ALBUM_ARTIST)
+                    add(MediaStore.Audio.Media.GENRE)
+                }
                 add(MediaStore.Audio.Media.DURATION)
                 add(MediaStore.Audio.Media.SIZE)
                 add(MediaStore.Audio.Media.DATE_ADDED)
@@ -376,88 +379,162 @@ class ScannerService(
                 add(MediaStore.Audio.Media.COMPOSER)
                 add(MediaStore.Audio.Media.YEAR)
                 add(MediaStore.Audio.Media.TRACK)
-                if (android.os.Build.VERSION.SDK_INT >= 30) {
-                    add(MediaStore.Audio.Media.GENRE)
-                }
             }.toTypedArray()
 
             var selection: String? = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
             var args: Array<String>? = null
 
             if (!pathsToFetch.isNullOrEmpty()) {
+              if (pathsToFetch.size > 900) {
+                return@withContext pathsToFetch.chunked(900).flatMap { chunk ->
+                  queryMediaStore(blacklist, chunk)
+                }
+              }
               val placeholders = pathsToFetch.joinToString(",") { "?" }
               selection = "${MediaStore.Audio.Media.DATA} IN ($placeholders)"
               args = pathsToFetch.toTypedArray()
             }
 
-            context.contentResolver.query(uri, projection, selection, args, null)?.use { cursor ->
-              val colId = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
-              val colPath = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
-              val colTitle = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
-              val colArtist = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
-              val colAlbum = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
+            val cursor = try {
+              context.contentResolver.query(uri, projection, selection, args, null)
+            } catch (e: IllegalArgumentException) {
+              Log.w("CatalogScanner", "Query with extended projection failed, retrying with fallback projection", e)
+              try {
+                val fallbackProjection = arrayOf(
+                  MediaStore.Audio.Media._ID,
+                  MediaStore.Audio.Media.DATA,
+                  MediaStore.Audio.Media.TITLE,
+                  MediaStore.Audio.Media.ARTIST,
+                  MediaStore.Audio.Media.ALBUM,
+                  MediaStore.Audio.Media.DURATION,
+                  MediaStore.Audio.Media.SIZE,
+                  MediaStore.Audio.Media.DATE_ADDED,
+                  MediaStore.Audio.Media.DATE_MODIFIED,
+                  MediaStore.Audio.Media.MIME_TYPE
+                )
+                context.contentResolver.query(uri, fallbackProjection, selection, args, null)
+              } catch (fallbackEx: Exception) {
+                Log.e("CatalogScanner", "Fallback MediaStore query also failed", fallbackEx)
+                null
+              }
+            } catch (e: Exception) {
+              Log.e("CatalogScanner", "Failed to query MediaStore", e)
+              null
+            }
+
+            cursor?.use { cur ->
+              val colId = cur.getColumnIndex(MediaStore.Audio.Media._ID)
+              val colPath = cur.getColumnIndex(MediaStore.Audio.Media.DATA)
+              if (colId == -1 || colPath == -1) {
+                Log.e("CatalogScanner", "MediaStore cursor missing mandatory _ID or DATA column")
+                return@use
+              }
+
+              val colTitle = cur.getColumnIndex(MediaStore.Audio.Media.TITLE)
+              val colArtist = cur.getColumnIndex(MediaStore.Audio.Media.ARTIST)
+              val colAlbum = cur.getColumnIndex(MediaStore.Audio.Media.ALBUM)
               val colAlbumArtist =
                       if (android.os.Build.VERSION.SDK_INT >= 30)
-                              cursor.getColumnIndex("album_artist")
+                              cur.getColumnIndex(MediaStore.Audio.Media.ALBUM_ARTIST)
                       else -1
-              val colGenre = cursor.getColumnIndex(MediaStore.Audio.Media.GENRE)
-              val colDur = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
-              val colSize = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
-              val colDateAdded = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
-              val colDateMod = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_MODIFIED)
-              val colMime = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE)
-              val colComposer = cursor.getColumnIndex(MediaStore.Audio.Media.COMPOSER)
-              val colYear = cursor.getColumnIndex(MediaStore.Audio.Media.YEAR)
-              val colTrack = cursor.getColumnIndex(MediaStore.Audio.Media.TRACK)
+              val colGenre =
+                      if (android.os.Build.VERSION.SDK_INT >= 30)
+                              cur.getColumnIndex(MediaStore.Audio.Media.GENRE)
+                      else -1
+              val colDur = cur.getColumnIndex(MediaStore.Audio.Media.DURATION)
+              val colSize = cur.getColumnIndex(MediaStore.Audio.Media.SIZE)
+              val colDateAdded = cur.getColumnIndex(MediaStore.Audio.Media.DATE_ADDED)
+              val colDateMod = cur.getColumnIndex(MediaStore.Audio.Media.DATE_MODIFIED)
+              val colMime = cur.getColumnIndex(MediaStore.Audio.Media.MIME_TYPE)
+              val colComposer = cur.getColumnIndex(MediaStore.Audio.Media.COMPOSER)
+              val colYear = cur.getColumnIndex(MediaStore.Audio.Media.YEAR)
+              val colTrack = cur.getColumnIndex(MediaStore.Audio.Media.TRACK)
 
-              while (cursor.moveToNext()) {
-                val path = cursor.getString(colPath)
-                if (path != null && File(path).exists()) {
+              while (cur.moveToNext()) {
+                if (cur.isNull(colId) || cur.isNull(colPath)) continue
+                val path = cur.getString(colPath) ?: continue
+                if (File(path).exists()) {
                   val shouldIgnore = blacklist.any { path == it || path.startsWith("$it/") }
                   if (!shouldIgnore) {
-                    val rawDateMod = cursor.getLong(colDateMod)
-                    val finalDateMod =
-                            if (rawDateMod > 10_000_000_000L) rawDateMod else rawDateMod * 1000L
+                    val rawDateMod =
+                            if (colDateMod != -1 && !cur.isNull(colDateMod)) cur.getLong(colDateMod) else 0L
+                    val finalDateMod = when {
+                      rawDateMod > 10_000_000_000L -> rawDateMod
+                      rawDateMod > 0L -> rawDateMod * 1000L
+                      else -> File(path).lastModified()
+                    }
+
+                    val title =
+                            if (colTitle != -1 && !cur.isNull(colTitle)) cur.getString(colTitle) ?: "" else ""
+
+                    // GARBAGE FILTER: MediaStore injects "<unknown>" into the
+                    // artist tag when a file has no artist. We treat this as blank
+                    // so TagLib's real value wins in processCommonFields.
+                    val rawArtist =
+                            if (colArtist != -1 && !cur.isNull(colArtist)) cur.getString(colArtist) else null
+                    val artist = rawArtist?.takeUnless { it.equals("<unknown>", ignoreCase = true) } ?: ""
+
+                    // GARBAGE FILTER: MediaStore uses the folder name as a fallback
+                    // album when a file has no album tag. We reject known garbage
+                    // values so TagLib's real value wins in processCommonFields.
+                    val rawAlbum =
+                            if (colAlbum != -1 && !cur.isNull(colAlbum)) cur.getString(colAlbum) else null
+                    val album = rawAlbum?.takeUnless {
+                      it.equals("<unknown>", ignoreCase = true) ||
+                              it.equals("Unknown Album", ignoreCase = true)
+                    } ?: ""
+
+                    val albumArtist =
+                            if (colAlbumArtist != -1 && !cur.isNull(colAlbumArtist))
+                                    cur.getString(colAlbumArtist) ?: ""
+                            else ""
+
+                    val genre =
+                            if (colGenre != -1 && !cur.isNull(colGenre)) cur.getString(colGenre) ?: ""
+                            else ""
+
+                    val duration =
+                            if (colDur != -1 && !cur.isNull(colDur)) cur.getLong(colDur) else 0L
+
+                    val size =
+                            if (colSize != -1 && !cur.isNull(colSize)) cur.getLong(colSize) else 0L
+
+                    val dateAdded =
+                            if (colDateAdded != -1 && !cur.isNull(colDateAdded)) cur.getLong(colDateAdded) else 0L
+
+                    val mimeType =
+                            if (colMime != -1 && !cur.isNull(colMime))
+                                    cur.getString(colMime) ?: "audio/*"
+                            else "audio/*"
+
+                    val composer =
+                            if (colComposer != -1 && !cur.isNull(colComposer))
+                                    cur.getString(colComposer) ?: ""
+                            else ""
+
+                    val year =
+                            if (colYear != -1 && !cur.isNull(colYear)) cur.getInt(colYear) else 0
+
+                    val trackNumber =
+                            if (colTrack != -1 && !cur.isNull(colTrack)) cur.getInt(colTrack) else 0
+
                     list.add(
                             SkeletonTrack(
-                                    mediaStoreId = cursor.getLong(colId),
+                                    mediaStoreId = cur.getLong(colId),
                                     path = path,
-                                    title = cursor.getString(colTitle) ?: "",
-
-                                    // GARBAGE FILTER: MediaStore injects "<unknown>" into the
-                                    // artist tag when a file has no artist. We treat this as blank
-                                    // so TagLib's real value wins in processCommonFields.
-                                    artist = cursor.getString(colArtist)
-                                            ?.takeUnless { it.equals("<unknown>", ignoreCase = true) }
-                                            ?: "",
-
-                                    // GARBAGE FILTER: MediaStore uses the folder name as a fallback
-                                    // album when a file has no album tag. We reject known garbage
-                                    // values so TagLib's real value wins in processCommonFields.
-                                    album = cursor.getString(colAlbum)
-                                            ?.takeUnless {
-                                                it.equals("<unknown>", ignoreCase = true) ||
-                                                it.equals("Unknown Album", ignoreCase = true)
-                                            }
-                                            ?: "",
-                                    albumArtist =
-                                            if (colAlbumArtist != -1)
-                                                    cursor.getString(colAlbumArtist) ?: ""
-                                            else "",
-                                    genre =
-                                            if (colGenre != -1) cursor.getString(colGenre) ?: ""
-                                            else "",
-                                    duration = cursor.getLong(colDur),
-                                    size = cursor.getLong(colSize),
-                                    dateAdded = cursor.getLong(colDateAdded),
+                                    title = title,
+                                    artist = artist,
+                                    album = album,
+                                    albumArtist = albumArtist,
+                                    genre = genre,
+                                    composer = composer,
+                                    year = year,
+                                    trackNumber = trackNumber,
+                                    duration = duration,
+                                    size = size,
+                                    dateAdded = dateAdded,
                                     dateModified = finalDateMod,
-                                    mimeType = cursor.getString(colMime) ?: "audio/*",
-                                    composer =
-                                            if (colComposer != -1)
-                                                    cursor.getString(colComposer) ?: ""
-                                            else "",
-                                    year = if (colYear != -1) cursor.getInt(colYear) else 0,
-                                    trackNumber = if (colTrack != -1) cursor.getInt(colTrack) else 0
+                                    mimeType = mimeType
                             )
                     )
                   }

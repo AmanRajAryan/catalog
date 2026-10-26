@@ -381,7 +381,7 @@ interface TrackDao {
 
   @Query(
           """
-        UPDATE tracks SET 
+        UPDATE OR REPLACE tracks SET 
             mediaStoreId = :mediaStoreId,
             albumId = :albumId,
             

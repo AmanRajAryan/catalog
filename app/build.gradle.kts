@@ -59,7 +59,7 @@ android {
 
 dependencies {
 
-implementation(files("libs/loghub.aar"))
+    implementation("io.github.amanrajaryan:loghub:2.0.0")
      
 
     implementation(project(":catalog"))
